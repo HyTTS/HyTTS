@@ -1,0 +1,5 @@
+node_modules
+/tmp
+junit.xml
+/coverage
+/dist

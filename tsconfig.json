@@ -1,0 +1,37 @@
+{
+    "include": ["./source/**/*.ts", "./source/**/*.tsx"],
+    "compilerOptions": {
+        "lib": ["DOM", "DOM.Iterable", "ES2022"],
+        "isolatedModules": true,
+        "esModuleInterop": true,
+        "jsx": "react-jsx",
+        "jsxImportSource": ".",
+        "moduleResolution": "node",
+        "resolveJsonModule": true,
+        "noFallthroughCasesInSwitch": true,
+        "forceConsistentCasingInFileNames": true,
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "noImplicitAny": true,
+        "noImplicitOverride": true,
+        "useUnknownInCatchVariables": true,
+        "strictNullChecks": true,
+        "composite": false,
+        "skipLibCheck": false,
+        "target": "ES2019",
+        "importsNotUsedAsValues": "error",
+        "strict": true,
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["./source/*"]
+        },
+        "outDir": "./tmp/typescript/",
+        "tsBuildInfoFile": "./tmp/typescript/HyTTS.tsbuildinfo",
+        "incremental": true,
+        "noEmit": true,
+        "noUncheckedIndexedAccess": true,
+        "declaration": true,
+        "allowJs": true,
+        "module": "ES2020"
+    }
+}
