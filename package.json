@@ -33,7 +33,7 @@
         "@types/lodash": "4.14.191",
         "@types/node": "18.13.0",
         "@typescript-eslint/eslint-plugin": "5.52.0",
-        "@typescript-eslint/parser": "5.52.0",
+        "@typescript-eslint/parser": "5.53.0",
         "esbuild-register": "3.4.2",
         "esbuild": "0.17.8",
         "eslint-plugin-no-relative-import-paths": "1.5.2",
