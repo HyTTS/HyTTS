@@ -3,6 +3,9 @@ import { createContext, useContext } from "@/jsx/context";
 import { EventArgs, EventHandler, PropsWithChildren, toJsxExpression } from "@/jsx/jsx-types";
 import { useCspNonce } from "@/jsx/csp-nonce";
 
+const browserScriptSymbol = Symbol();
+const browserFuncSymbol = Symbol();
+
 /**
  * Browser scripts can only capture variables of the given type. In particular, they cannot capture
  * objects or arrays for security reasons; it would be to easy to inadvertently capture some secret
@@ -17,7 +20,7 @@ export type CapturedVariable = undefined | null | boolean | number | string | Br
  * server variables must be passed explicitly for security reasons.
  */
 export type BrowserScript = {
-    __isBrowserScript: null; // Prevents inadvertent usage of regular functions as browser scripts
+    readonly [browserScriptSymbol]: null;
     readonly hasContext: boolean;
     readonly serializeScript: SerializeScript;
 };
@@ -28,7 +31,7 @@ export type BrowserScript = {
  * explicitly for security reasons.
  */
 export type BrowserFunc<T extends (...args: any[]) => any> = {
-    __isBrowserFunc: T | null; // Prevents inadvertent usage of regular functions as browser funcs
+    readonly [browserFuncSymbol]: T | null;
     readonly serializeScript: SerializeScript;
 };
 
@@ -116,7 +119,7 @@ export function createBrowserScript<TContext extends CapturedVariable[]>(
     ...context: TContext
 ): BrowserScript {
     return {
-        __isBrowserScript: null,
+        [browserScriptSymbol]: null,
         hasContext: true,
         serializeScript: serializeScript(script, context),
     };
@@ -127,7 +130,7 @@ export function createBrowserFunc<
     TContext extends CapturedVariable[]
 >(script: (...ctx: ToBrowserContext<TContext>) => T, ...context: TContext): BrowserFunc<T> {
     return {
-        __isBrowserFunc: null,
+        [browserFuncSymbol]: null,
         serializeScript: serializeScript(script, context),
     };
 }
@@ -164,7 +167,7 @@ export function useRegisterBrowserEventHandler(
     handler: BrowserFunc<(e: EventArgs) => void>
 ) {
     useContext(scriptContext)({
-        __isBrowserFunc: null,
+        [browserScriptSymbol]: null,
         hasContext: false,
         serializeScript: (registerFunction) => ({
             script: `document.getElementById("${id}").${eventName}=${registerFunction(handler)}`,
@@ -177,14 +180,14 @@ export function useRegisterBrowserEventHandler(
  * Checks if the given value is a browser script.
  */
 export function isBrowserScript(value: unknown): value is BrowserScript {
-    return value !== null && typeof value === "object" && "__isBrowserScript" in value;
+    return value !== null && typeof value === "object" && browserScriptSymbol in value;
 }
 
 /**
  * Checks if the given value is a browser function.
  */
 export function isBrowserFunc(value: unknown): value is BrowserFunc<any> {
-    return value !== null && typeof value === "object" && "__isBrowserFunc" in value;
+    return value !== null && typeof value === "object" && browserFuncSymbol in value;
 }
 
 function serializeScript<TContext extends CapturedVariable[]>(

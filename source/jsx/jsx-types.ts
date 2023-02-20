@@ -5,6 +5,8 @@ import type { BrowserFunc } from "./browser-script";
 /** The types that are supported as children of a JSX expression. */
 export type JsxNode = JsxElement | string | number | boolean | null | undefined | JsxNode[];
 
+const jsxExpressionSymbol = Symbol();
+
 /**
  * The runtime type of an JSX expression like `<div/>`, i.e., a function returning the rendered HTML string
  * in the simplest case. Since components can be `async`, however, a JSX expression can alternatively return
@@ -13,7 +15,7 @@ export type JsxNode = JsxElement | string | number | boolean | null | undefined 
  */
 export type JsxExpression = {
     (): string | null | Promise<string | null>;
-    __isJsxExpression: null; // Prevents inadvertent usage of regular values as JsxExpressions
+    [jsxExpressionSymbol]: null;
 };
 
 /**
@@ -61,7 +63,7 @@ export type EventArgs<TElement = HTMLElement, TEvent extends Event = Event> = TE
  * arbitrary function as a JSX child.
  */
 export function toJsxExpression(action: () => ReturnType<JsxExpression>): JsxExpression {
-    (action as any).__isJsxExpression = null;
+    (action as any)[jsxExpressionSymbol] = null;
     return action as JsxExpression;
 }
 
@@ -69,7 +71,7 @@ export function toJsxExpression(action: () => ReturnType<JsxExpression>): JsxExp
  * Checks whether the given value is a JSX expression and can thus safely be rendered as a JSX child.
  */
 export function isJsxExpression(value: unknown): value is JsxExpression {
-    return !!value && typeof value === "function" && "__isJsxExpression" in value;
+    return !!value && typeof value === "function" && jsxExpressionSymbol in value;
 }
 
 // ================================================================================================================
