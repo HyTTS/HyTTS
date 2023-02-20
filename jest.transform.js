@@ -16,7 +16,7 @@ module.exports = {
                 define: { "process.env.NODE_ENV": '"development"' },
                 jsx: "automatic",
                 jsxDev: false,
-                jsxImportSource: ".",
+                jsxImportSource: "@/jsx",
                 format: "cjs",
                 target: "esnext",
                 platform: "node",

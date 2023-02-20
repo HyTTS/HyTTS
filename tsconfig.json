@@ -5,7 +5,7 @@
         "isolatedModules": true,
         "esModuleInterop": true,
         "jsx": "react-jsx",
-        "jsxImportSource": ".",
+        "jsxImportSource": "@/jsx",
         "moduleResolution": "node",
         "resolveJsonModule": true,
         "noFallthroughCasesInSwitch": true,

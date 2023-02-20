@@ -1,6 +1,6 @@
 {
     "name": "@hytts/hytts",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "author": "Axel Habermaier",
     "license": "MIT",
     "homepage": "https://github.com/HyTTS/HyTTS",
@@ -9,8 +9,13 @@
         "url": "https://github.com/HyTTS/HyTTS"
     },
     "main": "index.js",
+    "exports": {
+        "./jsx-runtime": "./index.js",
+        "./jsx-dev-runtime": "./index.js",
+        ".": "./index.js"
+    },
     "scripts": {
-        "build": "tsup ./source/index.ts --clean --dts --format=cjs --target=node18 --env.NODE_ENV production && tsup ./source/jsx-dev-runtime.ts --dts --format=cjs --target=node18 --env.NODE_ENV production && tsup ./source/jsx-runtime.ts --dts --format=cjs --target=node18 --env.NODE_ENV production && cp ./package.json ./dist/package.json && cp ./README.md ./dist/README.md",
+        "build": "tsup ./source/index.ts --clean --dts --format=cjs --target=node18 --env.NODE_ENV production && cp ./package.json ./dist/package.json && cp ./README.md ./dist/README.md && echo 'export { JSX } from \"./index\";' > ./dist/jsx-runtime.d.ts",
         "publish:local": "yarn build && cd ./dist && npm pack --pack-destination ../tmp",
         "format:check": "prettier --check ./",
         "format:fix": "prettier --write --loglevel warn ./",

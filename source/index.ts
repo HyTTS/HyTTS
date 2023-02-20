@@ -21,7 +21,15 @@ export { type CspNonceProviderProps, CspNonceProvider, useCspNonce } from "@/jsx
 
 export { type ErrorBoundaryProps, type ErrorViewProps, ErrorBoundary } from "@/jsx/error-boundary";
 
-export { Fragment, renderToString } from "@/jsx/jsx-runtime";
+export {
+    jsx,
+    jsx as jsxDEV,
+    jsxs as jsxsDEV,
+    jsxs,
+    Fragment,
+    renderToString,
+    type JSX,
+} from "@/jsx/jsx-runtime";
 
 export type {
     EventArgs,
