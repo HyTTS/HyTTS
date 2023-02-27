@@ -15,10 +15,10 @@
         ".": "./index.js"
     },
     "scripts": {
-        "build": "tsup ./source/index.ts --clean --dts --format=cjs --target=node18 --env.NODE_ENV production && cp ./package.json ./dist/package.json && cp ./README.md ./dist/README.md && echo 'export { JSX } from \"./index\";' > ./dist/jsx-runtime.d.ts",
+        "build": "tsup ./source/index.ts --clean --dts --format=cjs --target=node18 --env.NODE_ENV production && cp ./package.json ./dist/package.json && cp ./README.md ./dist/README.md && echo 'export { JSX } from \"./index\";' > ./dist/jsx-runtime.d.ts && prettier --write ./dist/index.d.ts",
         "publish:local": "yarn build && cd ./dist && npm pack --pack-destination ../tmp",
-        "format:check": "prettier --check ./",
-        "format:fix": "prettier --write --loglevel warn ./",
+        "format:check": "prettier --check ./source",
+        "format:fix": "prettier --write --loglevel warn ./source",
         "lint": "eslint ./ --max-warnings 0",
         "test:debug": "node --inspect=0.0.0.0:4106 node_modules/.bin/jest --runInBand --watch --testRunner=\"jest-circus/runner\"",
         "test:run": "yarn jest --testRunner=\"jest-circus/runner\" --reporters=default --reporters=jest-junit",

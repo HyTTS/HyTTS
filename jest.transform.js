@@ -24,6 +24,7 @@ module.exports = {
                 sourcemap: true,
                 sourcesContent: false,
                 sourcefile: filename,
+                supported: { "dynamic-import": false }, // makes dynamic imports work in Jest
             });
 
             let { map, code } = result;

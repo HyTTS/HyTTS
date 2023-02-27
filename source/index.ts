@@ -44,3 +44,18 @@ export type {
 } from "@/jsx/jsx-types";
 
 export { type UniqueNameProviderProps, UniqueNameProvider, useUniqueName } from "@/jsx/unique-name";
+
+export {
+    type Action,
+    type ActionParams,
+    type LazyRoutingDefinition,
+    type Route,
+    type RouteParams,
+    type RoutingDefinition,
+    action,
+    route,
+} from "@/routing/routing";
+
+export { type RouteFilter, type RouteFilters, createRouteFilter } from "@/routing/route-filters";
+
+export { type ActionUrl, type RouteUrl, createUrls, joinPaths } from "@/routing/urls";
