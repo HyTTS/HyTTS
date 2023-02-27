@@ -19,7 +19,6 @@
         "composite": false,
         "skipLibCheck": false,
         "target": "ES2019",
-        "importsNotUsedAsValues": "error",
         "strict": true,
         "baseUrl": ".",
         "paths": {

@@ -72,15 +72,15 @@ describe("jsx rendering", () => {
             testJsx(<div browser:onclick={null!}></div>, "<div></div>");
         });
 
-        it("synthesizes an id if none was explicitly specified", async () => {
+        xit("synthesizes an id if none was explicitly specified", async () => {
             // TODO
         });
 
-        it("renders the script to attach an event handler", async () => {
+        xit("renders the script to attach an event handler", async () => {
             // TODO
         });
 
-        it("throws when an unsupported value is set for an event handler", async () => {
+        xit("throws when an unsupported value is set for an event handler", async () => {
             // TODO
         });
     });
