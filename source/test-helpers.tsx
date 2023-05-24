@@ -2,10 +2,11 @@ import { createServer } from "http";
 import { AddressInfo } from "net";
 import express, { Express } from "express";
 import { Server } from "http";
-import { renderToString } from "@/jsx/jsx-runtime";
 import { toExpressRouter } from "@/routing/express-router";
 import { RoutingDefinition } from "@/routing/routing";
 import { Urls, RouteUrl, ActionUrl, createUrls } from "@/routing/urls";
+import { createRenderCallback } from "./http/render-callback";
+import { JsxComponent, PropsWithChildren } from "@/jsx/jsx-types";
 
 type UseAppCallback<TReturn = Promise<void>> = (
     fetch: typeof global.fetch,
@@ -49,27 +50,23 @@ export function runTestApp<T extends RoutingDefinition>(
         urls: Urls<T>,
         fetchRoute: (route: RouteUrl) => Promise<Response>,
         fetchAction: (action: ActionUrl) => Promise<Response>
-    ) => Promise<void>
+    ) => Promise<void>,
+    appContext: JsxComponent<PropsWithChildren> = ({ children }) => <>{children}</>
 ) {
     const routes =
         typeof routingDefinition === "function" ? routingDefinition() : routingDefinition;
 
+    const renderCallback = createRenderCallback({
+        document: ({ children }) => <>{children}</>,
+        appContext,
+        errorView: ({ error }) => <>non-fatal: {error}</>,
+        fatalErrorView: (error) => `fatal: ${error}`,
+    });
+
     const app = express();
     app.set("query parser", (queryString: string) => queryString);
     app.use(express.text({ type: "application/x-www-form-urlencoded" }));
-    app.use(
-        toExpressRouter(routes, async (_req, res, Handler) => {
-            try {
-                const html = await renderToString(<Handler />);
-                if (!res.headersSent) {
-                    res.send(html);
-                }
-            } catch (e: unknown) {
-                console.error(e);
-                res.sendStatus(500);
-            }
-        })
-    );
+    app.use(toExpressRouter(routes, renderCallback));
 
     return testApp(app, (fetch) =>
         useApp(

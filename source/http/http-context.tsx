@@ -14,9 +14,7 @@ export type HttpContextProps = PropsWithChildren<{ readonly response: Response }
 /**
  * Provides access to the HTTP context, i.e., the HTTP response object, to all of its children.
  */
-export function HttpContext(props: HttpContextProps) {
-    return <httpContext.Provider value={props.response}>{props.children}</httpContext.Provider>;
-}
+export const HttpContextProvider = httpContext.Provider;
 
 /**
  * Sends an HTTP header of the given `name` and with the given `value` as part of the response. This

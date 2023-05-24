@@ -3,6 +3,7 @@ import { zLocalDate } from "@/serialization/date-time";
 import { LocalDate } from "@js-joda/core";
 import { z } from "zod";
 import { runTestApp } from "@/test-helpers";
+import { createContext, useContext } from "@/jsx/context";
 
 describe("express-router", () => {
     it("supports routing definitions without any params", () =>
@@ -523,6 +524,45 @@ describe("express-router", () => {
                 expect(actionResponse.status).toBe(200);
                 expect(await actionResponse.text()).toBe("12x");
             }
+        );
+    });
+
+    it("allows access to the app context during params computation", () => {
+        const state = { count: 0 };
+        const appContext = createContext<{ count: number }>();
+
+        function increaseCount() {
+            useContext(appContext).count += 1;
+            return z.object({});
+        }
+
+        return runTestApp(
+            {
+                "r/:n/": route(
+                    [],
+                    {
+                        pathParams: () => increaseCount(),
+                        searchParams: () => increaseCount(),
+                    },
+                    () => <></>
+                ),
+                "a/:n/": action(
+                    [],
+                    {
+                        pathParams: () => increaseCount(),
+                        actionParams: () => increaseCount(),
+                    },
+                    () => <></>
+                ),
+            },
+            async (urls, fetchRoute, fetchAction) => {
+                await fetchRoute(urls.route("/r/:n/", {}, {}));
+                expect(state.count).toBe(2);
+
+                await fetchAction(urls.action("/a/:n/", {}, {}));
+                expect(state.count).toBe(4);
+            },
+            ({ children }) => <appContext.Provider value={state}>{children}</appContext.Provider>
         );
     });
 });
