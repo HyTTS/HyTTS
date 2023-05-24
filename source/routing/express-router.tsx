@@ -12,6 +12,7 @@ import { unpack } from "@/serialization/data-packing";
 import { parseUrlSearchParams } from "@/serialization/url-params";
 import { Router } from "express";
 import type { RenderCallback } from "@/http/render-callback";
+import { getRequestBody, getSearchParams } from "@/http/http-context";
 
 /**
  * Creates an Express-based router for the given `routingDefinition`. The returned `Router` can then
@@ -64,24 +65,15 @@ export function toExpressRouter(
         ) {
             expressRouter.get(joinPaths(pathPrefix, path), (req, res) =>
                 render(
-                    async () => {
-                        if (req.query && typeof req.query !== "string") {
-                            throw new Error(
-                                "Expected URL query string to be unparsed. Make sure you've disabled query string parsing in " +
-                                    'Express like so: `app.set("query parser", (queryString: string) => queryString)`'
-                            );
-                        }
-
-                        return (
-                            <Handler
-                                pathParams={unpack(await getSchema(pathParams), req.params)}
-                                searchParams={parseUrlSearchParams(
-                                    await getSchema(searchParams),
-                                    req.query
-                                )}
-                            />
-                        );
-                    },
+                    async () => (
+                        <Handler
+                            pathParams={unpack(await getSchema(pathParams), req.params)}
+                            searchParams={parseUrlSearchParams(
+                                await getSchema(searchParams),
+                                getSearchParams(req)
+                            )}
+                        />
+                    ),
                     res,
                     routeFilters,
                     !options.noDocument
@@ -101,24 +93,15 @@ export function toExpressRouter(
         ) {
             expressRouter.post(joinPaths(pathPrefix, path), (req, res) =>
                 render(
-                    async () => {
-                        if (req.body && typeof req.body !== "string") {
-                            throw new Error(
-                                "Expected request body to be a string. Make sure you've enabled body string handling in " +
-                                    'Express like so: `app.use(express.text({ type: "application/x-www-form-urlencoded" }))`'
-                            );
-                        }
-
-                        return (
-                            <Handler
-                                pathParams={unpack(await getSchema(pathParams), req.params)}
-                                actionParams={parseUrlSearchParams(
-                                    await getSchema(actionParams),
-                                    req.body
-                                )}
-                            />
-                        );
-                    },
+                    async () => (
+                        <Handler
+                            pathParams={unpack(await getSchema(pathParams), req.params)}
+                            actionParams={parseUrlSearchParams(
+                                await getSchema(actionParams),
+                                getRequestBody(req)
+                            )}
+                        />
+                    ),
                     res,
                     actionFilters,
                     !options.noDocument

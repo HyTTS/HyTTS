@@ -2,7 +2,7 @@ import { createContext, useContext } from "@/jsx/context";
 import { JsxElement, PropsWithChildren } from "@/jsx/jsx-types";
 import { RouteUrl } from "@/routing/urls";
 import { parseUrlSearchParams } from "@/serialization/url-params";
-import { Response } from "express";
+import { Request, Response } from "express";
 import { ZodType, ZodTypeDef } from "zod";
 
 const httpContext = createContext<Response>({
@@ -45,7 +45,7 @@ export function useUrlSearchParams<
     Def extends ZodTypeDef,
     Input
 >(schema: ZodType<Output, Def, Input>): Output {
-    return parseUrlSearchParams(schema, useContext(httpContext).req.query as any)!;
+    return parseUrlSearchParams(schema, getSearchParams(useContext(httpContext).req))!;
 }
 
 /**
@@ -68,4 +68,34 @@ export type RedirectProps = {
 export function Redirect(props: RedirectProps): JsxElement {
     useRedirect(props.to);
     return null;
+}
+
+/**
+ * Ensures that the request's search params are a string and returns it. The string is typically expected
+ * to be URL encoded, but that is not checked here.
+ */
+export function getSearchParams(req: Request): string {
+    if (req.query && typeof req.query !== "string") {
+        throw new Error(
+            "Expected URL query string to be unparsed. Make sure you've disabled query string parsing in " +
+                'Express like so: `app.set("query parser", (queryString: string) => queryString)`'
+        );
+    }
+
+    return req.query;
+}
+
+/**
+ * Ensures that the request body is a string and returns it. The string is typically expected to be
+ * URL encoded, but that is not checked here.
+ */
+export function getRequestBody(req: Request): string {
+    if (req.body && typeof req.body !== "string") {
+        throw new Error(
+            "Expected request body to be a string. Make sure you've enabled body string handling in " +
+                'Express like so: `app.use(express.text({ type: "application/x-www-form-urlencoded" }))`'
+        );
+    }
+
+    return req.body;
 }
