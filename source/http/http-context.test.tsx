@@ -3,7 +3,7 @@ import {
     useHttpStatusCode,
     useResponseHeader,
     useUrlSearchParams,
-} from "@/routing/http-context";
+} from "@/http/http-context";
 import { RoutingDefinition, route } from "@/routing/routing";
 import { createUrls } from "@/routing/urls";
 import { runTestApp } from "@/test-helpers";

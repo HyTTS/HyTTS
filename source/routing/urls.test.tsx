@@ -1,4 +1,4 @@
-import { Redirect } from "@/routing/http-context";
+import { Redirect } from "@/http/http-context";
 import { route, action } from "@/routing/routing";
 import { createUrls } from "@/routing/urls";
 import { z } from "zod";

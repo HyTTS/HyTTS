@@ -1,19 +1,17 @@
-import { JsxComponent, JsxElement } from "@/jsx/jsx-types";
 import {
-    Action,
-    ObjectSchema,
-    ParamsSchema,
-    Route,
-    RoutingDefinition,
+    type Action,
+    type ObjectSchema,
+    type ParamsSchema,
+    type Route,
+    type RoutingDefinition,
     isAction,
     isRoute,
 } from "@/routing/routing";
 import { joinPaths } from "@/routing/urls";
 import { unpack } from "@/serialization/data-packing";
 import { parseUrlSearchParams } from "@/serialization/url-params";
-import { Router, Request, Response } from "express";
-import { HttpContext } from "@/routing/http-context";
-import { RouteFilters } from "@/routing/route-filters";
+import { Router } from "express";
+import type { RenderCallback } from "@/http/render-callback";
 
 /**
  * Creates an Express-based router for the given `routingDefinition`. The returned `Router` can then
@@ -21,12 +19,7 @@ import { RouteFilters } from "@/routing/route-filters";
  */
 export function toExpressRouter(
     routingDefinition: RoutingDefinition,
-    render: (
-        req: Request,
-        res: Response,
-        handler: JsxComponent,
-        noDocument: boolean
-    ) => Promise<void>
+    render: RenderCallback
 ): Router {
     const expressRouter = Router({ mergeParams: true });
     visit(routingDefinition, "");
@@ -71,8 +64,6 @@ export function toExpressRouter(
         ) {
             expressRouter.get(joinPaths(pathPrefix, path), (req, res) =>
                 render(
-                    req,
-                    res,
                     async () => {
                         if (req.query && typeof req.query !== "string") {
                             throw new Error(
@@ -82,26 +73,18 @@ export function toExpressRouter(
                         }
 
                         return (
-                            <HttpContext response={res}>
-                                <ApplyFilters
-                                    filters={routeFilters}
-                                    handler={
-                                        <Handler
-                                            pathParams={unpack(
-                                                await getSchema(pathParams),
-                                                req.params
-                                            )}
-                                            searchParams={parseUrlSearchParams(
-                                                await getSchema(searchParams),
-                                                req.query
-                                            )}
-                                        />
-                                    }
-                                />
-                            </HttpContext>
+                            <Handler
+                                pathParams={unpack(await getSchema(pathParams), req.params)}
+                                searchParams={parseUrlSearchParams(
+                                    await getSchema(searchParams),
+                                    req.query
+                                )}
+                            />
                         );
                     },
-                    options?.noDocument ?? false
+                    res,
+                    routeFilters,
+                    !options.noDocument
                 )
             );
         }
@@ -118,8 +101,6 @@ export function toExpressRouter(
         ) {
             expressRouter.post(joinPaths(pathPrefix, path), (req, res) =>
                 render(
-                    req,
-                    res,
                     async () => {
                         if (req.body && typeof req.body !== "string") {
                             throw new Error(
@@ -129,26 +110,18 @@ export function toExpressRouter(
                         }
 
                         return (
-                            <HttpContext response={res}>
-                                <ApplyFilters
-                                    filters={actionFilters}
-                                    handler={
-                                        <Handler
-                                            pathParams={unpack(
-                                                await getSchema(pathParams),
-                                                req.params
-                                            )}
-                                            actionParams={parseUrlSearchParams(
-                                                await getSchema(actionParams),
-                                                req.body
-                                            )}
-                                        />
-                                    }
-                                />
-                            </HttpContext>
+                            <Handler
+                                pathParams={unpack(await getSchema(pathParams), req.params)}
+                                actionParams={parseUrlSearchParams(
+                                    await getSchema(actionParams),
+                                    req.body
+                                )}
+                            />
                         );
                     },
-                    options?.noDocument ?? false
+                    res,
+                    actionFilters,
+                    !options.noDocument
                 )
             );
         }
@@ -161,25 +134,4 @@ async function getSchema(
     schemaOrFactory: ParamsSchema<ObjectSchema>
 ): Promise<ObjectSchema | undefined> {
     return typeof schemaOrFactory === "function" ? await schemaOrFactory() : schemaOrFactory;
-}
-
-type ApplyFiltersProps = {
-    readonly handler: JsxElement;
-    readonly filters: RouteFilters;
-};
-
-function ApplyFilters(props: ApplyFiltersProps) {
-    if (Array.isArray(props.filters) && props.filters.length === 0) {
-        return props.handler;
-    } else {
-        const Filter = Array.isArray(props.filters) ? props.filters[0]! : props.filters;
-        return (
-            <Filter>
-                <ApplyFilters
-                    filters={Array.isArray(props.filters) ? props.filters.slice(1) : []}
-                    handler={props.handler}
-                />
-            </Filter>
-        );
-    }
 }

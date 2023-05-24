@@ -10,6 +10,4 @@ export function useCspNonce() {
 
 export type CspNonceProviderProps = PropsWithChildren<{ readonly nonce: string }>;
 
-export function CspNonceProvider(props: CspNonceProviderProps) {
-    return nonceContext.Provider({ value: props.nonce, children: props.children });
-}
+export const CspNonceProvider = nonceContext.Provider;
