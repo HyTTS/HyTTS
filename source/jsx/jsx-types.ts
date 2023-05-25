@@ -1900,7 +1900,7 @@ export namespace JSX {
         keygen: KeygenHTMLAttributes<HTMLElement>;
         label: LabelHTMLAttributes<HTMLLabelElement>;
         legend: HTMLAttributes<HTMLLegendElement>;
-        "hytts-frame": HTMLAttributes<HTMLDivElement>;
+        "hy-frame": HTMLAttributes<HTMLDivElement>;
         li: LiHTMLAttributes<HTMLLIElement>;
         link: LinkHTMLAttributes<HTMLLinkElement>;
         main: HTMLAttributes<HTMLElement>;

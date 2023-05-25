@@ -17,7 +17,7 @@ export {
     useContext,
 } from "@/jsx/context";
 
-export { useCspNonce } from "@/jsx/csp-nonce";
+export { useCspNonce, CspNonce } from "@/jsx/csp-nonce";
 
 export { type ErrorBoundaryProps, type ErrorViewProps, ErrorBoundary } from "@/jsx/error-boundary";
 
@@ -95,3 +95,5 @@ export {
     type RenderOptions,
     createRenderCallback,
 } from "@/http/render-callback";
+
+export { Html } from "@/dom/html";
