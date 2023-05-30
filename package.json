@@ -1,6 +1,6 @@
 {
     "name": "@hytts/hytts",
-    "version": "0.0.6",
+    "version": "0.1.0",
     "author": "Axel Habermaier",
     "license": "MIT",
     "homepage": "https://github.com/HyTTS/HyTTS",
@@ -19,10 +19,14 @@
     "exports": {
         "./jsx-runtime": "./index.js",
         "./jsx-dev-runtime": "./index.js",
+        "./main.browser": "./main.browser.js",
         ".": "./index.js"
     },
     "scripts": {
-        "build": "tsup ./source/index.ts --clean --dts --format=cjs --target=node18 --env.NODE_ENV production && cp ./package.json ./dist/package.json && cp ./README.md ./dist/README.md && echo 'export { JSX } from \"./index\";' > ./dist/jsx-runtime.d.ts && prettier --write ./dist/index.d.ts && cd ./dist && npm pkg delete scripts && npm pkg delete devDependencies",
+        "build:browser": "tsup ./source/browser/main.browser.ts --dts --format=cjs --target=es2020 --env.NODE_ENV production && prettier --write ./dist/main.browser.d.ts",
+        "build:server": "tsup ./source/index.ts --clean --dts --format=cjs --target=node18 --env.NODE_ENV production && echo 'export { JSX } from \"./index\";' > ./dist/jsx-runtime.d.ts && prettier --write ./dist/index.d.ts",
+        "build:files": "cp ./package.json ./dist/package.json && cp ./README.md ./dist/README.md && cd ./dist && npm pkg delete scripts && npm pkg delete devDependencies",
+        "build": "yarn build:server && yarn build:browser && yarn build:files",
         "publish:local": "yarn build && cd ./dist && npm pack --pack-destination ../tmp",
         "format:check": "prettier --check ./source",
         "format:fix": "prettier --write --loglevel warn ./source",
@@ -63,5 +67,5 @@
     "engines": {
         "node": ">=18"
     },
-    "sideEffects": false
+    "sideEffects": true
 }

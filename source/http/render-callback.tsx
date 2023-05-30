@@ -56,6 +56,14 @@ export function createRenderCallback({
         embedInDocument: boolean
     ) => {
         try {
+            if (!embedInDocument && res.req.headers["x-hytts"] !== "true") {
+                throw new Error(
+                    "Received a request to a handler not embedded in the document that was not issued by HyTTS. " +
+                        "This typically indicates that the user initiated a frame updated before the HyTTS browser " +
+                        "bundle was initialized."
+                );
+            }
+
             sendResponse(
                 await render(() => (
                     <ErrorBoundary ErrorView={ErrorView}>
