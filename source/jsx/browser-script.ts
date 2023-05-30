@@ -49,7 +49,9 @@ export function BrowserScriptRenderer(props: PropsWithChildren) {
         children: toJsxExpression(
             async () =>
                 (await renderChildren(props.children)) +
-                `<script nonce="${useCspNonce()}" type="text/javascript">${generateCode()}</script>`
+                (registeredScripts.size > 0
+                    ? `<script nonce="${useCspNonce()}" type="text/javascript">${generateCode()}</script>`
+                    : "")
         ),
     });
 

@@ -33,6 +33,18 @@ describe("renderer", () => {
         expect(res.content).toBe("test");
     });
 
+    it("throws when rendering a non-HyTTS request without a document", async () => {
+        const res = createResponse(false);
+        const render = createRenderCallback({
+            ...renderOptions,
+            document: ({ children }) => <html>{children}</html>,
+        });
+
+        await render(() => <>test</>, res, [], false);
+
+        expect(res.content).toContain("not issued by HyTTS");
+    });
+
     it("applies route filters", async () => {
         const res = createResponse();
         const render = createRenderCallback(renderOptions);
@@ -189,7 +201,7 @@ describe("renderer", () => {
             },
         });
 
-        expect(() =>
+        await expect(() =>
             render(
                 () => {
                     throw new Error("test");
@@ -247,7 +259,7 @@ const renderOptions: RenderOptions = {
     fatalErrorView: (error) => `fatal: ${error}`,
 };
 
-function createResponse() {
+function createResponse(hyHeader = true) {
     const self = {
         statusCode: 200,
         status: (status: number) => (self.statusCode = status),
@@ -258,6 +270,7 @@ function createResponse() {
         redirect: (url: string) => (self.url = url),
         headers: [] as [string, string][],
         setHeader: (name: string, value: string) => self.headers.push([name, value]),
+        req: { headers: hyHeader ? { "x-hytts": "true" } : {} },
     };
 
     return self as any as typeof self & Response;
