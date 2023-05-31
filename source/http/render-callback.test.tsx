@@ -124,7 +124,7 @@ describe("renderer", () => {
             true
         );
 
-        expect(res.statusCode).toBe(200);
+        expect(res.statusCode).toBe(500);
         expect(res.content).toBe("<html>non-fatal: Error: test</html>");
     });
 
@@ -144,7 +144,7 @@ describe("renderer", () => {
             false
         );
 
-        expect(res.statusCode).toBe(200);
+        expect(res.statusCode).toBe(500);
         expect(res.content).toBe("non-fatal: Error: test");
     });
 
@@ -243,7 +243,7 @@ describe("renderer", () => {
             false
         );
 
-        expect(res.statusCode).toBe(200);
+        expect(res.statusCode).toBe(500);
         expect(res.content).toBe("app-context Error: test");
     });
 });

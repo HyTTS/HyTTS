@@ -3,7 +3,7 @@ import { renderToString } from "@/jsx/jsx-runtime";
 import { Response } from "express";
 import type { JsxComponent, PropsWithChildren } from "@/jsx/jsx-types";
 import { RouteFilters } from "@/routing/route-filters";
-import { HttpContextProvider } from "./http-context";
+import { HttpContextProvider, useHttpStatusCode } from "./http-context";
 import { CspNonceProvider } from "@/jsx/csp-nonce";
 import { UniqueNameProvider } from "@/jsx/unique-name";
 import { randomBytes } from "node:crypto";
@@ -66,7 +66,7 @@ export function createRenderCallback({
 
             sendResponse(
                 await render(() => (
-                    <ErrorBoundary ErrorView={ErrorView}>
+                    <ErrorBoundary ErrorView={InternalServerError}>
                         <Handler />
                     </ErrorBoundary>
                 ))
@@ -76,11 +76,19 @@ export function createRenderCallback({
             // JSX-based error page, if possible. Otherwise, fall back to a possibly uglier, simpler,
             // string-based error view that hopefully still works.
             try {
-                sendResponse(await render(() => <ErrorView error={e} />));
+                sendResponse(await render(() => <InternalServerError error={e} />));
             } catch (e: unknown) {
+                // Default to a status code of 500 internal server error. The error view can override this.
                 res.status(500);
                 sendResponse(await fatalErrorView(e));
             }
+        }
+
+        function InternalServerError(props: ErrorViewProps) {
+            // Default to a status code of 500 internal server error. The error view can override this
+            // to a more specific error if it wants to.
+            useHttpStatusCode(500);
+            return <ErrorView {...props} />;
         }
 
         function render(Component: JsxComponent<{}>) {

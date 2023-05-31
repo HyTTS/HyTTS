@@ -49,12 +49,31 @@ export function useUrlSearchParams<
 }
 
 /**
- * Sets the URL the browser should be redirected to using a 302 HTTP status code. Immediately sends
- * the response so ensure that nothing else gets rendered. You cannot call `useRedirect` more than
- * once in the same HTTP response.
+ * Sets the route URL the browser should be redirected to using a 302 HTTP status code. Immediately
+ * sends the response so ensure that nothing else gets rendered. You cannot redirect more than once in
+ * the same HTTP response.
  */
 export function useRedirect(redirectTo: RouteUrl) {
+    // SECURITY: Do not allow redirects outside of our app, when someone fakes the `RouteUrl`, see:
+    // https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+    if (!isRelativeUrl(redirectTo.url)) {
+        throw new Error("Redirecting to absolute URLs is unsupported for security reasons.");
+    }
+
     useContext(httpContext).redirect(redirectTo.url);
+}
+
+/**
+ * Sets an absolute URL, typically to some other webpage or app, the browser should be redirected to using
+ * a 302 HTTP status code. Immediately sends the response so ensure that nothing else gets rendered. You
+ * cannot redirect more than once in the same HTTP response.
+ *
+ * SECURITY: Redirecting to absolute URLs can be dangerous from a security perspective. Ensure that you
+ * redirect to an expected URL and that you understand the OWASP security cheat sheet for redirects:
+ * https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+ */
+export function useAbsoluteRedirect(url: string) {
+    useContext(httpContext).redirect(url);
 }
 
 export type RedirectProps = {
@@ -67,6 +86,24 @@ export type RedirectProps = {
  */
 export function Redirect(props: RedirectProps): JsxElement {
     useRedirect(props.to);
+    return null;
+}
+
+export type AbsoluteRedirectProps = {
+    readonly to: string;
+};
+
+/**
+ * Sets an absolute URL, typically to some other webpage or app, the browser should be redirected to using
+ * a 302 HTTP status code, internally using `useAbsoluteRedirect`. See the remarks there regarding the precise
+ * behavior.
+ *
+ * SECURITY: Redirecting to absolute URLs can be dangerous from a security perspective. Ensure that you
+ * redirect to an expected URL and that you understand the OWASP security cheat sheet for redirects:
+ * https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+ */
+export function AbsoluteRedirect(props: AbsoluteRedirectProps): JsxElement {
+    useAbsoluteRedirect(props.to);
     return null;
 }
 
@@ -98,4 +135,12 @@ export function getRequestBody(req: Request): string {
     }
 
     return req.body;
+}
+
+/**
+ * Checks whether the given URL is relative or absolute.
+ */
+function isRelativeUrl(url: string) {
+    const origin = "https://example.com";
+    return new URL(url, origin).origin === origin;
 }

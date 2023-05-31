@@ -59,7 +59,7 @@ export function runTestApp<T extends RoutingDefinition>(
     const renderCallback = createRenderCallback({
         document: ({ children }) => <>{children}</>,
         appContext,
-        errorView: ({ error }) => <>non-fatal: {error}</>,
+        errorView: ({ error }) => <>non-fatal: {`${error}`}</>,
         fatalErrorView: (error) => `fatal: ${error}`,
     });
 

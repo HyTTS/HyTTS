@@ -1,16 +1,17 @@
 import {
+    AbsoluteRedirect,
     Redirect,
     useHttpStatusCode,
     useResponseHeader,
     useUrlSearchParams,
 } from "@/http/http-context";
 import { RoutingDefinition, route } from "@/routing/routing";
-import { createUrls } from "@/routing/urls";
+import { RouteUrl, createUrls } from "@/routing/urls";
 import { runTestApp } from "@/test-helpers";
 import { z } from "zod";
 
 describe("http-context", () => {
-    it("supports an HTTP redirect", () =>
+    it("supports an HTTP redirect to a route", () =>
         runTestApp(
             () => {
                 const routes = {
@@ -24,6 +25,41 @@ describe("http-context", () => {
                 const routeResponse = await fetchRoute(urls.route("/a/"));
                 expect(routeResponse.status).toBe(200);
                 expect(await routeResponse.text()).toBe("b");
+            }
+        ));
+
+    it("throws for an HTTP redirect to an absolute URL if someone fakes a `RouteUrl`", () =>
+        runTestApp(
+            () => {
+                const routes = {
+                    "/a": route([], {}, () => (
+                        <Redirect to={{ url: "https://google.com" } as RouteUrl} />
+                    )),
+                } satisfies RoutingDefinition;
+
+                return routes;
+            },
+            async (urls, fetchRoute) => {
+                const routeResponse = await fetchRoute(urls.route("/a/"));
+                expect(routeResponse.status).toBe(500);
+                expect(await routeResponse.text()).toContain("Redirecting to absolute URLs");
+            }
+        ));
+
+    it("supports an HTTP redirect to an absolute URL", () =>
+        runTestApp(
+            () => {
+                const routes = {
+                    "/a": route([], {}, () => <AbsoluteRedirect to="https://www.google.de" />),
+                    "/b": route([], {}, () => <>b</>),
+                } satisfies RoutingDefinition;
+
+                return routes;
+            },
+            async (urls, fetchRoute) => {
+                const routeResponse = await fetchRoute(urls.route("/a/"));
+                expect(routeResponse.status).toBe(200);
+                expect(routeResponse.url).toBe("https://www.google.de/");
             }
         ));
 

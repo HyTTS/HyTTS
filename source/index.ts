@@ -82,8 +82,11 @@ export { toExpressRouter } from "@/routing/express-router";
 export { parseUrlSearchParams, toUrlSearchParams } from "@/serialization/url-params";
 
 export {
+    type AbsoluteRedirectProps,
     type RedirectProps,
+    AbsoluteRedirect,
     Redirect,
+    useAbsoluteRedirect,
     useHttpStatusCode,
     useRedirect,
     useResponseHeader,
