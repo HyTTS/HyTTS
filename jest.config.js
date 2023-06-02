@@ -8,6 +8,7 @@
 module.exports = {
     moduleNameMapper: { "@/(.*)": "<rootDir>/source/$1" },
     roots: ["./source"],
+    setupFilesAfterEnv: ["./jest.setup.ts"],
     testEnvironment: "node",
     transform: { "^.+\\.(t|j)sx?$": "./jest.transform.js" },
 };

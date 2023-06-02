@@ -1,4 +1,4 @@
-import { route, action } from "@/routing/routing";
+import { route, action, Route } from "@/routing/routing";
 import { zLocalDate } from "@/serialization/date-time";
 import { LocalDate } from "@js-joda/core";
 import { z } from "zod";
@@ -179,6 +179,30 @@ describe("express-router", () => {
 
                 expect(await routeResponse.text()).toBe("33test");
                 expect(await actionResponse.text()).toBe("4test");
+            }
+        ));
+
+    it("gracefully handles thrown errors when loading lazy routing definitions", () =>
+        runTestApp(
+            {
+                "r/": async (): Promise<{ default: { x: Route<any, any> } }> => {
+                    throw new Error("test");
+                },
+                "t/": route([], {}, () => <>test</>),
+            },
+            async (urls, fetchRoute) => {
+                // Ensure the error is ignored every time the failing route is called and that
+                // we can still call other routes regardless.
+                for (let i = 0; i < 2; ++i) {
+                    const errorResponse = await fetchRoute(urls.route("/r/x/"));
+                    const routeResponse = await fetchRoute(urls.route("/t/"));
+
+                    expect(errorResponse.status).toBe(500);
+                    expect(routeResponse.status).toBe(200);
+
+                    expect(await errorResponse.text()).toBe("Internal Server Error");
+                    expect(await routeResponse.text()).toBe("test");
+                }
             }
         ));
 

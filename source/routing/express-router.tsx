@@ -13,6 +13,7 @@ import { parseUrlSearchParams } from "@/serialization/url-params";
 import { Router } from "express";
 import type { RenderCallback } from "@/http/render-callback";
 import { getRequestBody, getSearchParams } from "@/http/http-context";
+import { log } from "@/log";
 
 /**
  * Creates an Express-based router for the given `routingDefinition`. The returned `Router` can then
@@ -36,7 +37,13 @@ export function toExpressRouter(
                 let nestedRouter: Router | undefined = undefined;
                 expressRouter.use(joinPaths(pathPrefix, path), async (req, res, next) => {
                     if (!nestedRouter) {
-                        nestedRouter = toExpressRouter((await def()).default, render);
+                        try {
+                            nestedRouter = toExpressRouter((await def()).default, render);
+                        } catch (e: unknown) {
+                            log.error(`Failed to load routing definition at '${path}': ${e}`);
+                            res.sendStatus(500);
+                            return;
+                        }
                     }
                     nestedRouter(req, res, next);
                 });
@@ -49,7 +56,9 @@ export function toExpressRouter(
                     visit(def, joinPaths(pathPrefix, path));
                 }
             } else {
-                throw new Error(`Unknown routing definition '${routingDefinition}'.`);
+                log.warn(
+                    `Ignored unsupported routing definition '${routingDefinition}' at '${path}'.`
+                );
             }
         }
 
