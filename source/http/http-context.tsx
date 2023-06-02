@@ -5,9 +5,7 @@ import { parseUrlSearchParams } from "@/serialization/url-params";
 import { Request, Response } from "express";
 import { ZodType, ZodTypeDef } from "zod";
 
-const httpContext = createContext<Response>({
-    name: "http context",
-});
+const httpContext = createContext<Response>({ name: "http context" });
 
 export type HttpContextProps = PropsWithChildren<{ readonly response: Response }>;
 
