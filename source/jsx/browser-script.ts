@@ -51,7 +51,7 @@ export function BrowserScriptRenderer(props: PropsWithChildren) {
                 (await renderChildren(props.children)) +
                 (registeredScripts.size > 0
                     ? `<script nonce="${useCspNonce()}" type="text/javascript">${generateCode()}</script>`
-                    : "")
+                    : ""),
         ),
     });
 
@@ -129,7 +129,7 @@ export function createBrowserScript<TContext extends CapturedVariable[]>(
 
 export function createBrowserFunc<
     T extends (...args: any[]) => any,
-    TContext extends CapturedVariable[]
+    TContext extends CapturedVariable[],
 >(script: (...ctx: ToBrowserContext<TContext>) => T, ...context: TContext): BrowserFunc<T> {
     return {
         [browserFuncSymbol]: null,
@@ -140,7 +140,7 @@ export function createBrowserFunc<
 export function createEventHandler<
     TElement extends EventTarget,
     TEvent extends Event,
-    TContext extends CapturedVariable[]
+    TContext extends CapturedVariable[],
 >(
     handler: (...ctx: ToBrowserContext<TContext>) => (e: EventArgs<TElement, TEvent>) => void,
     ...context: TContext
@@ -166,7 +166,7 @@ export function useRegisterBrowserScript(script: BrowserScript) {
 export function useRegisterBrowserEventHandler(
     id: string,
     eventName: string,
-    handler: BrowserFunc<(e: EventArgs) => void>
+    handler: BrowserFunc<(e: EventArgs) => void>,
 ) {
     useContext(scriptContext)({
         [browserScriptSymbol]: null,
@@ -194,7 +194,7 @@ export function isBrowserFunc(value: unknown): value is BrowserFunc<any> {
 
 function serializeScript<TContext extends CapturedVariable[]>(
     script: () => any,
-    context: TContext
+    context: TContext,
 ): SerializeScript {
     return (registerFunction: (func: BrowserFunc<any>) => string) => ({
         script: script.toString(),

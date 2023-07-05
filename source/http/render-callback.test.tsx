@@ -53,7 +53,7 @@ describe("renderer", () => {
             () => <>test</>,
             res,
             [createRouteFilter(({ children }) => <>filter {children}</>)],
-            false
+            false,
         );
 
         expect(res.statusCode).toBe(200);
@@ -82,7 +82,7 @@ describe("renderer", () => {
             },
             res,
             [],
-            false
+            false,
         );
 
         expect(res.statusCode).toBe(401);
@@ -100,7 +100,7 @@ describe("renderer", () => {
             },
             res,
             [],
-            false
+            false,
         );
 
         expect(res.statusCode).toBe(200);
@@ -121,7 +121,7 @@ describe("renderer", () => {
             },
             res,
             [],
-            true
+            true,
         );
 
         expect(res.statusCode).toBe(500);
@@ -141,7 +141,7 @@ describe("renderer", () => {
             },
             res,
             [],
-            false
+            false,
         );
 
         expect(res.statusCode).toBe(500);
@@ -163,7 +163,7 @@ describe("renderer", () => {
             },
             res,
             [],
-            false
+            false,
         );
 
         expect(res.statusCode).toBe(500);
@@ -182,7 +182,7 @@ describe("renderer", () => {
                     throw new Error("test");
                 }),
             ],
-            false
+            false,
         );
 
         expect(res.statusCode).toBe(500);
@@ -208,8 +208,8 @@ describe("renderer", () => {
                 },
                 res,
                 [],
-                false
-            )
+                false,
+            ),
         ).rejects.toThrowError();
     });
 
@@ -240,7 +240,7 @@ describe("renderer", () => {
             },
             res,
             [],
-            false
+            false,
         );
 
         expect(res.statusCode).toBe(500);

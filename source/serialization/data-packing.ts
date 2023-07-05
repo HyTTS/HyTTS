@@ -81,7 +81,7 @@ export function pack(value: unknown): PackedData {
  */
 export function unpack<Output, Def extends ZodTypeDef, Input>(
     schema: ZodType<Output, Def, Input> | undefined,
-    data: PackedData
+    data: PackedData,
 ): Output | undefined {
     if (!schema) {
         return undefined;
@@ -118,7 +118,7 @@ export function unpack<Output, Def extends ZodTypeDef, Input>(
             else if (typeof schema.value === "string") return data;
             else {
                 throw new Error(
-                    "Literals are only supported for `boolean`, `number`, and `string`."
+                    "Literals are only supported for `boolean`, `number`, and `string`.",
                 );
             }
         } else if (schema instanceof ZodObject) {
@@ -145,7 +145,7 @@ export function unpack<Output, Def extends ZodTypeDef, Input>(
             if (!Array.isArray(data)) {
                 // This happens, for example, when qs converts an array into an object as a security precaution...
                 throw new Error(
-                    "Data is not an array. Possibly, the maximum allowed array size is exceeded."
+                    "Data is not an array. Possibly, the maximum allowed array size is exceeded.",
                 );
             }
 

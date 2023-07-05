@@ -59,12 +59,12 @@ describe("urls", () => {
                 "x/:s": route(
                     [],
                     { pathParams: z.object({ n: z.number(), s: z.string() }) },
-                    handler
+                    handler,
                 ),
                 "y/:t": action(
                     [],
                     { pathParams: z.object({ n: z.number(), t: z.string() }) },
-                    handler
+                    handler,
                 ),
             },
         });
@@ -113,12 +113,12 @@ describe("urls", () => {
                     "x/:s": route(
                         [],
                         { pathParams: z.object({ n: z.number(), s: z.string() }) },
-                        handler
+                        handler,
                     ),
                     "y/:t": action(
                         [],
                         { pathParams: z.object({ n: z.number(), t: z.string() }) },
-                        handler
+                        handler,
                     ),
                 },
             }),
@@ -161,7 +161,7 @@ describe("urls", () => {
             r: route(
                 [],
                 { searchParams: z.object({ n: z.number().optional(), s: z.string() }) },
-                handler
+                handler,
             ),
         });
 
@@ -183,7 +183,7 @@ describe("urls", () => {
             r: action(
                 [],
                 { actionParams: z.object({ n: z.number().optional(), s: z.string() }) },
-                handler
+                handler,
             ),
         });
 
@@ -213,12 +213,12 @@ describe("urls", () => {
                     pathParams: z.object({ n: z.number(), s: z.string() }),
                     searchParams: z.object({ n: z.number().optional(), s: z.string() }),
                 },
-                handler
+                handler,
             ),
         });
 
         expect(urls.route("/r/:n/:s/", { s: "s", n: 2 }, { s: "s", n: 1 }).url).toBe(
-            "/r/2/s/?s=s&n=1"
+            "/r/2/s/?s=s&n=1",
         );
         expect(urls.route("/r/:n/:s/", { s: "s", n: 1 }, { s: "" }).url).toBe("/r/1/s/?s=");
 
@@ -242,7 +242,7 @@ describe("urls", () => {
                     pathParams: z.object({ n: z.number(), s: z.string() }),
                     actionParams: z.object({ n: z.number().optional(), s: z.string() }),
                 },
-                handler
+                handler,
             ),
         });
 
@@ -274,7 +274,7 @@ describe("urls", () => {
                     pathParams: () => z.object({ n: z.number() }),
                     searchParams: () => z.object({ n: z.number().optional(), s: z.string() }),
                 },
-                handler
+                handler,
             ),
             "a/:n/": action(
                 [],
@@ -282,7 +282,7 @@ describe("urls", () => {
                     pathParams: () => z.object({ n: z.number() }),
                     actionParams: () => z.object({ n: z.number().optional(), s: z.string() }),
                 },
-                handler
+                handler,
             ),
         });
 

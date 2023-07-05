@@ -25,7 +25,7 @@ describe("http-context", () => {
                 const routeResponse = await fetchRoute(urls.route("/a/"));
                 expect(routeResponse.status).toBe(200);
                 expect(await routeResponse.text()).toBe("b");
-            }
+            },
         ));
 
     it("throws for an HTTP redirect to an absolute URL if someone fakes a `RouteUrl`", () =>
@@ -43,7 +43,7 @@ describe("http-context", () => {
                 const routeResponse = await fetchRoute(urls.route("/a/"));
                 expect(routeResponse.status).toBe(500);
                 expect(await routeResponse.text()).toContain("Redirecting to absolute URLs");
-            }
+            },
         ));
 
     it("supports an HTTP redirect to an absolute URL", () =>
@@ -60,7 +60,7 @@ describe("http-context", () => {
                 const routeResponse = await fetchRoute(urls.route("/a/"));
                 expect(routeResponse.status).toBe(200);
                 expect(routeResponse.url).toBe("https://www.google.de/");
-            }
+            },
         ));
 
     it("supports setting HTTP headers", () =>
@@ -91,7 +91,7 @@ describe("http-context", () => {
 
                 const overwriteResponse = await fetchRoute(urls.route("/overwrite/"));
                 expect(overwriteResponse.headers.get("x-test")).toBe("2");
-            }
+            },
         ));
 
     it("supports setting the HTTP status code", () =>
@@ -113,7 +113,7 @@ describe("http-context", () => {
 
                 const overwriteResponse = await fetchRoute(urls.route("/overwrite/"));
                 expect(overwriteResponse.status).toBe(401);
-            }
+            },
         ));
 
     it("supports obtaining the request's search params", () =>
@@ -128,6 +128,6 @@ describe("http-context", () => {
                 const response = await fetchRoute(urls.route("/r/", { a: "xyz" }));
                 expect(response.status).toBe(200);
                 expect(await response.text()).toBe("xyz");
-            }
+            },
         ));
 });

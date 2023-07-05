@@ -21,7 +21,7 @@ import { log } from "@/log";
  */
 export function toExpressRouter(
     routingDefinition: RoutingDefinition,
-    render: RenderCallback
+    render: RenderCallback,
 ): Router {
     const expressRouter = Router({ mergeParams: true });
     visit(routingDefinition, "");
@@ -57,7 +57,7 @@ export function toExpressRouter(
                 }
             } else {
                 log.warn(
-                    `Ignored unsupported routing definition '${routingDefinition}' at '${path}'.`
+                    `Ignored unsupported routing definition '${routingDefinition}' at '${path}'.`,
                 );
             }
         }
@@ -70,7 +70,7 @@ export function toExpressRouter(
                 pathParams,
                 searchParams,
                 options,
-            }: Route<ObjectSchema, ObjectSchema>
+            }: Route<ObjectSchema, ObjectSchema>,
         ) {
             expressRouter.get(joinPaths(pathPrefix, path), (req, res) =>
                 render(
@@ -79,14 +79,14 @@ export function toExpressRouter(
                             pathParams={unpack(await getSchema(pathParams), req.params)}
                             searchParams={parseUrlSearchParams(
                                 await getSchema(searchParams),
-                                getSearchParams(req)
+                                getSearchParams(req),
                             )}
                         />
                     ),
                     res,
                     routeFilters,
-                    !options.noDocument
-                )
+                    !options.noDocument,
+                ),
             );
         }
 
@@ -98,7 +98,7 @@ export function toExpressRouter(
                 pathParams,
                 actionParams,
                 options,
-            }: Action<ObjectSchema, ObjectSchema>
+            }: Action<ObjectSchema, ObjectSchema>,
         ) {
             expressRouter.post(joinPaths(pathPrefix, path), (req, res) =>
                 render(
@@ -107,14 +107,14 @@ export function toExpressRouter(
                             pathParams={unpack(await getSchema(pathParams), req.params)}
                             actionParams={parseUrlSearchParams(
                                 await getSchema(actionParams),
-                                getRequestBody(req)
+                                getRequestBody(req),
                             )}
                         />
                     ),
                     res,
                     actionFilters,
-                    !options.noDocument
-                )
+                    !options.noDocument,
+                ),
             );
         }
     }
@@ -123,7 +123,7 @@ export function toExpressRouter(
 }
 
 async function getSchema(
-    schemaOrFactory: ParamsSchema<ObjectSchema>
+    schemaOrFactory: ParamsSchema<ObjectSchema>,
 ): Promise<ObjectSchema | undefined> {
     return typeof schemaOrFactory === "function" ? await schemaOrFactory() : schemaOrFactory;
 }

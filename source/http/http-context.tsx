@@ -41,7 +41,7 @@ export function useHttpStatusCode(code: number) {
 export function useUrlSearchParams<
     Output extends Record<string, unknown>,
     Def extends ZodTypeDef,
-    Input
+    Input,
 >(schema: ZodType<Output, Def, Input>): Output {
     return parseUrlSearchParams(schema, getSearchParams(useContext(httpContext).req))!;
 }
@@ -113,7 +113,7 @@ export function getSearchParams(req: Request): string {
     if (req.query && typeof req.query !== "string") {
         throw new Error(
             "Expected URL query string to be unparsed. Make sure you've disabled query string parsing in " +
-                'Express like so: `app.set("query parser", (queryString: string) => queryString)`'
+                'Express like so: `app.set("query parser", (queryString: string) => queryString)`',
         );
     }
 
@@ -128,7 +128,7 @@ export function getRequestBody(req: Request): string {
     if (req.body && typeof req.body !== "string") {
         throw new Error(
             "Expected request body to be a string. Make sure you've enabled body string handling in " +
-                'Express like so: `app.use(express.text({ type: "application/x-www-form-urlencoded" }))`'
+                'Express like so: `app.use(express.text({ type: "application/x-www-form-urlencoded" }))`',
         );
     }
 

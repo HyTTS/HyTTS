@@ -10,7 +10,7 @@ import { JsxComponent, PropsWithChildren } from "@/jsx/jsx-types";
 
 type UseAppCallback<TReturn = Promise<void>> = (
     fetch: typeof global.fetch,
-    baseUrl: string
+    baseUrl: string,
 ) => TReturn;
 
 /**
@@ -20,7 +20,7 @@ type UseAppCallback<TReturn = Promise<void>> = (
  */
 async function testApp<TReturn>(
     app: Express,
-    callback: UseAppCallback<TReturn>
+    callback: UseAppCallback<TReturn>,
 ): Promise<Awaited<TReturn>> {
     let server: Server | undefined = undefined;
     try {
@@ -49,9 +49,9 @@ export function runTestApp<T extends RoutingDefinition>(
     useApp: (
         urls: Urls<T>,
         fetchRoute: (route: RouteUrl) => Promise<Response>,
-        fetchAction: (action: ActionUrl) => Promise<Response>
+        fetchAction: (action: ActionUrl) => Promise<Response>,
     ) => Promise<void>,
-    appContext: JsxComponent<PropsWithChildren> = ({ children }) => <>{children}</>
+    appContext: JsxComponent<PropsWithChildren> = ({ children }) => <>{children}</>,
 ) {
     const routes =
         typeof routingDefinition === "function" ? routingDefinition() : routingDefinition;
@@ -77,7 +77,7 @@ export function runTestApp<T extends RoutingDefinition>(
                     method: "POST",
                     body: action.actionParams,
                     headers: { "content-type": "application/x-www-form-urlencoded" },
-                })
-        )
+                }),
+        ),
     );
 }

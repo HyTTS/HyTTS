@@ -26,10 +26,10 @@ export type FrameSelector = string;
  */
 export async function navigateToRoute(
     frameSelector: FrameSelector,
-    routeUrl: string
+    routeUrl: string,
 ): Promise<void> {
     return withHistoryUpdate(frameSelector, routeUrl, (frame, signal) =>
-        fetchRoute(frame, routeUrl, signal)
+        fetchRoute(frame, routeUrl, signal),
     );
 }
 
@@ -64,10 +64,10 @@ export function navigateToAction(
     frameSelector: FrameSelector,
     actionUrl: string,
     actionParams: string,
-    routeUrlForHistory: string
+    routeUrlForHistory: string,
 ): Promise<void> {
     return withHistoryUpdate(frameSelector, routeUrlForHistory, (frame, signal) =>
-        fetchAction(frame, actionUrl, actionParams, signal)
+        fetchAction(frame, actionUrl, actionParams, signal),
     );
 }
 
@@ -77,7 +77,7 @@ export function navigateToAction(
 async function withHistoryUpdate(
     frameSelector: FrameSelector,
     historyUrl: string,
-    fetch: (frame: Element, signal: AbortSignal) => Promise<Response>
+    fetch: (frame: Element, signal: AbortSignal) => Promise<Response>,
 ): Promise<void> {
     // Update the history immediately to simulate the native browser behavior.
     const thisNavigationId = ++navigationId;
@@ -105,7 +105,7 @@ async function withHistoryUpdate(
  */
 export function loadRoute(frameSelector: FrameSelector, routeUrl: string): Promise<void> {
     return updateFrame(frameSelector, async (frame, signal) =>
-        extractFrameFromResponse(frame, await fetchRoute(frame, routeUrl, signal))
+        extractFrameFromResponse(frame, await fetchRoute(frame, routeUrl, signal)),
     );
 }
 
@@ -118,10 +118,10 @@ export function loadRoute(frameSelector: FrameSelector, routeUrl: string): Promi
 export async function executeAction(
     frameSelector: FrameSelector,
     actionUrl: string,
-    actionParams: string
+    actionParams: string,
 ): Promise<void> {
     return updateFrame(frameSelector, async (frame, signal) =>
-        extractFrameFromResponse(frame, await fetchAction(frame, actionUrl, actionParams, signal))
+        extractFrameFromResponse(frame, await fetchAction(frame, actionUrl, actionParams, signal)),
     );
 }
 
@@ -138,7 +138,7 @@ export async function executeAction(
  */
 export async function updateFrame(
     frameSelector: FrameSelector,
-    getFrameElement: (frame: Element, abortSignal: AbortSignal) => Promise<Element>
+    getFrameElement: (frame: Element, abortSignal: AbortSignal) => Promise<Element>,
 ): Promise<void> {
     const frame = document.querySelector(frameSelector);
     if (!frame) {
@@ -155,7 +155,7 @@ export async function updateFrame(
     // because the current frame might have new frame children with the same child frame ids as
     // before, but the updates for the old child frames should not affect the new child frames.
     const childFrames = [...document.querySelectorAll("hy-frame")].filter(
-        (frame) => frame !== frame && frame.contains(frame)
+        (frame) => frame !== frame && frame.contains(frame),
     );
 
     // Start the new update and store it and a new abort controller as a pending update of the frame,
@@ -287,7 +287,7 @@ async function extractFrameFromResponse(frame: Element, response: Response): Pro
                 bubbles: true,
                 cancelable: true,
                 detail: { response, newFrameElement },
-            })
+            }),
         );
 
         if (updateFrameForErrorResponses && response.status >= 300) {

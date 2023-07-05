@@ -7,7 +7,7 @@ import { zLocalDate } from "@/serialization/date-time";
 describe("URL search params", () => {
     function roundtrip<T extends Record<string, unknown>, Def extends ZodTypeDef, I>(
         schema: ZodType<T, Def, I>,
-        obj: T
+        obj: T,
     ) {
         return parseUrlSearchParams(schema, toUrlSearchParams(obj));
     }
@@ -20,8 +20,8 @@ describe("URL search params", () => {
         expect(
             parseUrlSearchParams(
                 z.object({ a: z.object({ b: z.number().array(), c: z.string() }), d: z.boolean() }),
-                params
-            )
+                params,
+            ),
         ).toEqual(obj);
     });
 
@@ -34,7 +34,7 @@ describe("URL search params", () => {
     it("handles empty or missing values correctly", () => {
         expect(parseUrlSearchParams(undefined, undefined)).toBe(undefined);
         expect(parseUrlSearchParams(z.object({ a: z.string() }).optional(), undefined)).toBe(
-            undefined
+            undefined,
         );
         expect(parseUrlSearchParams(z.object({ a: z.string().optional() }), undefined)).toEqual({
             a: undefined,
@@ -82,20 +82,20 @@ describe("URL search params", () => {
     it("should not place `undefined` values into the URL recursively", () => {
         expect(toUrlSearchParams({ a: undefined, b: 3 })).toBe("b=3");
         expect(decodeURIComponent(toUrlSearchParams({ a: [{ a: undefined, b: 3 }] }))).toBe(
-            "a.0.b=3"
+            "a.0.b=3",
         );
     });
 
     it("should not place equals sign for `null` values into the URL recursively", () => {
         expect(toUrlSearchParams({ a: null, b: 3 })).toBe("a&b=3");
         expect(decodeURIComponent(toUrlSearchParams({ a: [{ a: null, b: 3 }] }))).toBe(
-            "a.0.a&a.0.b=3"
+            "a.0.a&a.0.b=3",
         );
     });
 
     it("roundtrip nested objects", () => {
         expect(
-            roundtrip(z.object({ o: z.object({ a: z.boolean() }) }), { o: { a: true } })
+            roundtrip(z.object({ o: z.object({ a: z.boolean() }) }), { o: { a: true } }),
         ).toEqual({ o: { a: true } });
     });
 
@@ -103,20 +103,20 @@ describe("URL search params", () => {
         expect(
             roundtrip(
                 z.object({ o: z.object({ a: z.object({ b: z.boolean() }).array() }).array() }),
-                { o: [{ a: [{ b: true }] }] }
-            )
+                { o: [{ a: [{ b: true }] }] },
+            ),
         ).toEqual({ o: [{ a: [{ b: true }] }] });
     });
 
     it("should throw if object key contains a '.'", () => {
         expect(() => roundtrip(z.object({ "a.b": z.boolean() }), { "a.b": true })).toThrow(
-            "Invalid symbol '.'"
+            "Invalid symbol '.'",
         );
     });
 
     it("should roundtrip nested arrays", () => {
         expect(
-            roundtrip(z.object({ o: z.array(z.boolean().array()) }), { o: [[true, false]] })
+            roundtrip(z.object({ o: z.array(z.boolean().array()) }), { o: [[true, false]] }),
         ).toEqual({ o: [[true, false]] });
     });
 
@@ -134,7 +134,7 @@ describe("URL search params", () => {
 
     it("should roundtrip string with default null value", () => {
         expect(
-            roundtrip(z.object({ s: z.string().nullable().default(null) }), { s: null })
+            roundtrip(z.object({ s: z.string().nullable().default(null) }), { s: null }),
         ).toEqual({ s: null });
     });
 
@@ -145,7 +145,7 @@ describe("URL search params", () => {
             a: null,
         });
         expect(roundtrip(z.object({ a: z.number().array().optional() }), { a: undefined })).toEqual(
-            { a: undefined }
+            { a: undefined },
         );
         expect(roundtrip(z.object({ a: z.number().array().optional() }), { a: [] })).toEqual({
             a: undefined,
@@ -155,7 +155,7 @@ describe("URL search params", () => {
     it("cannot overwrite previous array values", () => {
         // The second `a.0=` causes qs to generate a nested array, which then fails the Zod schema validation...
         expect(() =>
-            parseUrlSearchParams(z.object({ a: z.number().array() }), "a.0=0&a.1=1&a.0=2")
+            parseUrlSearchParams(z.object({ a: z.number().array() }), "a.0=0&a.1=1&a.0=2"),
         ).toThrow("Expected number, received array");
     });
 
@@ -178,13 +178,13 @@ describe("URL search params", () => {
 
     it("should compact into a sparse array for small indices", () => {
         expect(
-            parseUrlSearchParams(z.object({ a: z.number().array() }), "?a.0=0&a.10=10&a.99=99")
+            parseUrlSearchParams(z.object({ a: z.number().array() }), "?a.0=0&a.10=10&a.99=99"),
         ).toEqual({ a: [0, 10, 99] });
     });
 
     it("should throw for arrays with holes", () => {
         expect(() =>
-            parseUrlSearchParams(z.object({ a: z.number().array() }), "?a.0=10&a.10000=10000")
+            parseUrlSearchParams(z.object({ a: z.number().array() }), "?a.0=10&a.10000=10000"),
         ).toThrow("is not an array");
     });
 
@@ -206,7 +206,7 @@ describe("URL search params", () => {
         expect(roundtrip(schema, { d: array })).toEqual({ d: array });
 
         expect(() => parseUrlSearchParams(z.object({ now: zLocalDate() }), "now=test")).toThrow(
-            "Not a local date"
+            "Not a local date",
         );
     });
 
@@ -219,7 +219,7 @@ describe("URL search params", () => {
     it("protects against prototype poisoning", () => {
         const result = parseUrlSearchParams(
             z.object({ a: z.object({ b: z.string().optional() }) }),
-            "a.b=test&a.__proto__.b=a"
+            "a.b=test&a.__proto__.b=a",
         );
 
         expect(result).toEqual({ a: { b: "test" } });
@@ -227,13 +227,13 @@ describe("URL search params", () => {
         expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
 
         expect(() =>
-            parseUrlSearchParams(z.object({ a: z.string().array() }), "a[0]=1&a[1]=2&a.length=100")
+            parseUrlSearchParams(z.object({ a: z.string().array() }), "a[0]=1&a[1]=2&a.length=100"),
         ).toThrow("Data is not an array");
     });
 
     it("throws when `string` is passed where `number` is expected", () => {
         expect(() => parseUrlSearchParams(z.object({ a: z.number() }), "a=test")).toThrow(
-            "Expected number, received string"
+            "Expected number, received string",
         );
     });
 });

@@ -33,7 +33,7 @@ export function Fragment() {}
  */
 export function jsxs<TProps extends Record<string, unknown> = {}>(
     element: string | JsxComponent<TProps>,
-    allProps: PropsWithChildren<TProps>
+    allProps: PropsWithChildren<TProps>,
 ): JsxExpression {
     const { children, ...props } = allProps;
 
@@ -47,7 +47,7 @@ export function jsxs<TProps extends Record<string, unknown> = {}>(
         return voidElements.has(element)
             ? toJsxExpression(() => `<${element}${renderProps(props)}>`)
             : toJsxExpression(() =>
-                  renderChildren(children, `<${element}${renderProps(props)}>`, `</${element}>`)
+                  renderChildren(children, `<${element}${renderProps(props)}>`, `</${element}>`),
               );
     }
 
@@ -121,7 +121,7 @@ function renderProps(props: Record<string, unknown>) {
                     useRegisterBrowserEventHandler(
                         id,
                         name.slice(browserEventPrefixLength),
-                        handler
+                        handler,
                     );
                 } else {
                     throw new Error(`Expected a browser function for event handler '${name}'.`);

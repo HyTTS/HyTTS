@@ -18,7 +18,7 @@ describe("route filters", () => {
                 const routeAction = await fetchAction(urls.action("/b/"));
                 expect(routeAction.status).toBe(200);
                 expect(await routeAction.text()).toBe("action");
-            }
+            },
         ));
 
     it("supports a single filter", () => {
@@ -46,7 +46,7 @@ describe("route filters", () => {
                 const actionResponseD = await fetchAction(urls.action("/d/"));
                 expect(actionResponseD.status).toBe(200);
                 expect(await actionResponseD.text()).toBe("single filter d");
-            }
+            },
         );
     });
 
@@ -67,7 +67,7 @@ describe("route filters", () => {
                 const actionResponse = await fetchAction(urls.action("/b/"));
                 expect(actionResponse.status).toBe(200);
                 expect(await actionResponse.text()).toBe("filter 1 filter 2 b");
-            }
+            },
         );
     });
 
@@ -90,7 +90,7 @@ describe("route filters", () => {
                 const actionResponse = await fetchAction(urls.action("/b/"));
                 expect(actionResponse.status).toBe(401);
                 expect(await actionResponse.text()).toBe("filter error");
-            }
+            },
         );
     });
 });

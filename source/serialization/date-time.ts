@@ -23,7 +23,7 @@ export const zLocalDate = () =>
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Not a local date" });
                     return z.NEVER;
                 }
-            })
+            }),
         );
 
 export const zDuration = () =>
@@ -37,7 +37,7 @@ export const zDuration = () =>
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Not a duration" });
                     return z.NEVER;
                 }
-            })
+            }),
         );
 
 export const zLocalTime = () =>
@@ -51,7 +51,7 @@ export const zLocalTime = () =>
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Not a local time" });
                     return z.NEVER;
                 }
-            })
+            }),
         );
 
 export const zLocalDateTime = () =>
@@ -65,7 +65,7 @@ export const zLocalDateTime = () =>
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Not a local date time" });
                     return z.NEVER;
                 }
-            })
+            }),
         );
 
 export const zZonedDateTime = () =>
@@ -79,7 +79,7 @@ export const zZonedDateTime = () =>
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Not a zoned date time" });
                     return z.NEVER;
                 }
-            })
+            }),
         );
 
 export const zPeriod = () =>
@@ -93,7 +93,7 @@ export const zPeriod = () =>
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Not a period" });
                     return z.NEVER;
                 }
-            })
+            }),
         );
 
 export const zInstant = () =>
@@ -107,7 +107,7 @@ export const zInstant = () =>
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Not an instant" });
                     return z.NEVER;
                 }
-            })
+            }),
         );
 
 export const zYear = () =>
@@ -121,7 +121,7 @@ export const zYear = () =>
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Not a year" });
                     return z.NEVER;
                 }
-            })
+            }),
         );
 
 export const zMonth = () =>
@@ -135,7 +135,7 @@ export const zMonth = () =>
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Not a month" });
                     return z.NEVER;
                 }
-            })
+            }),
         );
 
 export const zYearMonth = () =>
@@ -149,5 +149,5 @@ export const zYearMonth = () =>
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Not a year month" });
                     return z.NEVER;
                 }
-            })
+            }),
         );

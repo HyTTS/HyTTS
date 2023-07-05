@@ -10,10 +10,10 @@ import { unpack, pack } from "@/serialization/data-packing";
 export function parseUrlSearchParams<
     Output extends Record<string, unknown> | undefined,
     Def extends ZodTypeDef,
-    Input
+    Input,
 >(
     schema: ZodType<Output, Def, Input> | undefined,
-    paramsString: string | null | undefined
+    paramsString: string | null | undefined,
 ): Output | undefined {
     return unpack(
         schema,
@@ -31,7 +31,7 @@ export function parseUrlSearchParams<
                   // Do not allow arrays with more than 100 elements so that noone can attempt a denial of
                   // service attack by sending, e.g., `&a[10000000000]=0`.
                   arrayLimit: 100,
-              })
+              }),
     );
 }
 
@@ -39,7 +39,7 @@ export function parseUrlSearchParams<
  * Converts the given object into an URL-encoded search params string.
  */
 export function toUrlSearchParams<T extends Record<string, unknown>>(
-    obj: T | null | undefined
+    obj: T | null | undefined,
 ): string {
     if (!obj) {
         return "";
@@ -56,7 +56,7 @@ export function toUrlSearchParams<T extends Record<string, unknown>>(
         // For some reason, with `allowDots` above, qs only does this for object keys but not for array indices.
         encoder: (value, _, __, mode) =>
             encodeURIComponent(
-                mode === "key" ? value.replaceAll("]", "").replaceAll("[", ".") : value
+                mode === "key" ? value.replaceAll("]", "").replaceAll("[", ".") : value,
             ),
     });
 }

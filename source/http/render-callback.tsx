@@ -53,14 +53,14 @@ export function createRenderCallback({
         Handler: JsxComponent,
         res: Response,
         filters: RouteFilters,
-        embedInDocument: boolean
+        embedInDocument: boolean,
     ) => {
         try {
             if (!embedInDocument && res.req.headers["x-hytts"] !== "true") {
                 throw new Error(
                     "Received a request to a handler not embedded in the document that was not issued by HyTTS. " +
                         "This typically indicates that the user initiated a frame updated before the HyTTS browser " +
-                        "bundle was initialized."
+                        "bundle was initialized.",
                 );
             }
 
@@ -69,7 +69,7 @@ export function createRenderCallback({
                     <ErrorBoundary ErrorView={InternalServerError}>
                         <Handler />
                     </ErrorBoundary>
-                ))
+                )),
             );
         } catch (e: unknown) {
             // There was some error outside the top-level error boundary. So let's try to render a
@@ -109,7 +109,7 @@ export function createRenderCallback({
                             </AppContext>
                         </UniqueNameProvider>
                     </CspNonceProvider>
-                </HttpContextProvider>
+                </HttpContextProvider>,
             );
         }
 

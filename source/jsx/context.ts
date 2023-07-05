@@ -64,7 +64,7 @@ export function useContext<T>(context: Context<T>): T {
             throw new Error(
                 `No context named '${
                     context.options?.name ?? "[unnamed context]"
-                }' has been set by any ancestor component and the context does not have a default value.`
+                }' has been set by any ancestor component and the context does not have a default value.`,
             );
         }
     }

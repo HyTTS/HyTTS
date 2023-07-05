@@ -70,14 +70,14 @@ describe("data packing", () => {
         expect(
             unpack(
                 z.custom((v) => v !== "1"),
-                "2"
-            )
+                "2",
+            ),
         ).toBe("2");
         expect(() =>
             unpack(
                 z.custom((v) => v !== "1"),
-                "1"
-            )
+                "1",
+            ),
         ).toThrow();
     });
 
@@ -90,13 +90,13 @@ describe("data packing", () => {
                 a: "1",
                 b: "",
                 c: null,
-            })
+            }),
         ).toEqual({ a: 1, b: "", c: null });
 
         expect(
             unpack(z.object({ a: z.object({ b: z.object({ c: z.number() }), d: z.boolean() }) }), {
                 a: { b: { c: "1" }, d: "true" },
-            })
+            }),
         ).toEqual({ a: { b: { c: 1 }, d: true } });
 
         expect(() => unpack(z.object({}), "test")).toThrow("Data is not an object.");
@@ -170,15 +170,15 @@ describe("data packing", () => {
                     .number()
                     .refine(() => true)
                     .transform((v) => v + 11),
-                "1"
-            )
+                "1",
+            ),
         ).toBe(12);
     });
 
     it("throws if property name contains '.'", () => {
         expect(() => pack({ "a.b": 1 })).toThrow("Invalid symbol '.'");
         expect(() => unpack(z.object({ "a.b": z.number() }), { "a.b": "1" })).toThrow(
-            "Invalid symbol '.'"
+            "Invalid symbol '.'",
         );
     });
 

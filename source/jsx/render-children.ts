@@ -4,7 +4,7 @@ import { isJsxExpression, JsxExpression } from "@/jsx/jsx-types";
 export function renderChildren(
     children: unknown,
     startTag = "",
-    endTag = ""
+    endTag = "",
 ): string | Promise<string> {
     const renderedChildren: (string | null | Promise<string | null>)[] = [];
     collectChildrenAndStartRendering(children);

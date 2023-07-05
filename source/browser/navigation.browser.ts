@@ -102,7 +102,7 @@ export function interceptClicks() {
                         options.hyFrame,
                         href,
                         options.hyActionParams ?? "",
-                        options.hyHistoryUrl
+                        options.hyHistoryUrl,
                     );
                 } else {
                     executeAction(options.hyFrame, href, options.hyActionParams ?? "");

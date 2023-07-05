@@ -57,7 +57,7 @@ describe("jsx rendering", () => {
         it("renders multiple attributes", () =>
             testJsx(
                 <input step={1} checked id="id" class="test" />,
-                '<input step="1" checked="true" id="id" class="test">'
+                '<input step="1" checked="true" id="id" class="test">',
             ));
 
         it("throws for unsupported attribute types", async () => {
@@ -139,7 +139,7 @@ describe("jsx rendering", () => {
                         <span class="red">hello</span> test
                     </p>
                 </div>,
-                '<div><p><span class="red">hello</span> test</p></div>'
+                '<div><p><span class="red">hello</span> test</p></div>',
             );
         });
 
@@ -148,7 +148,7 @@ describe("jsx rendering", () => {
                 <div>
                     a &lt; 1 {"a"} {"<"} {1} {true} {["<"]} {[[[["<"], "<"], "<"], "&"]}
                 </div>,
-                "<div>a &lt; 1 a &lt; 1  &lt; &lt;&lt;&lt;&amp;</div>"
+                "<div>a &lt; 1 a &lt; 1  &lt; &lt;&lt;&lt;&amp;</div>",
             );
         });
 
@@ -241,7 +241,7 @@ describe("jsx rendering", () => {
         it("renders its synchronous children when no error is thrown", async () => {
             await testJsx(
                 <ErrorBoundary ErrorView={() => <>error</>}>success</ErrorBoundary>,
-                "success"
+                "success",
             );
         });
 
@@ -251,7 +251,7 @@ describe("jsx rendering", () => {
                 <ErrorBoundary ErrorView={() => <>error</>}>
                     <C />
                 </ErrorBoundary>,
-                "success"
+                "success",
             );
         });
 
@@ -264,7 +264,7 @@ describe("jsx rendering", () => {
                 <ErrorBoundary ErrorView={(props) => <>{(props.error as Error).message}</>}>
                     <C />
                 </ErrorBoundary>,
-                "test-error"
+                "test-error",
             );
         });
 
@@ -278,7 +278,7 @@ describe("jsx rendering", () => {
                 <ErrorBoundary ErrorView={(props) => <>{(props.error as Error).message}</>}>
                     <C />
                 </ErrorBoundary>,
-                "test-error"
+                "test-error",
             );
         });
     });
@@ -308,7 +308,7 @@ describe("jsx rendering", () => {
                 <testContext.Provider value={17}>
                     <C />
                 </testContext.Provider>,
-                "17"
+                "17",
             );
         });
 
@@ -328,7 +328,7 @@ describe("jsx rendering", () => {
                 <testContext.Provider value={17}>
                     <C2 />
                 </testContext.Provider>,
-                "17 33 17"
+                "17 33 17",
             );
         });
 
@@ -346,7 +346,7 @@ describe("jsx rendering", () => {
                         <C />
                     </otherContext.Provider>
                 </testContext.Provider>,
-                "17 test"
+                "17 test",
             );
         });
 
@@ -366,7 +366,7 @@ describe("jsx rendering", () => {
                         <C idx={idx} />
                     ))}
                 </otherContext.Provider>,
-                ""
+                "",
             );
 
             expect(count).toBe(3);
@@ -395,7 +395,7 @@ describe("jsx rendering", () => {
                     ))}
                     <C1 />
                 </testContext.Provider>,
-                "33-0-1-2-33-"
+                "33-0-1-2-33-",
             );
         });
     });

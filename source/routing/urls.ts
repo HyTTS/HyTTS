@@ -35,11 +35,11 @@ export type Urls<T extends RoutingDefinition> = ReturnType<
 export function createUrls<
     T extends RoutingDefinition,
     Get extends Record<string, Array<any>> = GetEndpoints<ToEndpoints<T>>,
-    Post extends Record<string, Array<any>> = PostEndpoints<ToEndpoints<T>>
+    Post extends Record<string, Array<any>> = PostEndpoints<ToEndpoints<T>>,
 >(
     // This parameter is only used for type inference. We don't use the route definition's data directly,
     // as we don't want to load the associated modules just because we have to generate some URL.
-    _: T
+    _: T,
 ): {
     readonly route: <Url extends keyof Get & string>(route: Url, ...params: Get[Url]) => RouteUrl;
     readonly action: <Url extends keyof Post & string>(
@@ -107,7 +107,7 @@ type ToEndpoints<T extends RoutingDefinition> = {
         ? { path: Path; verb: "post"; pathParams: PathParams; bodyParams: ActionParams }
         : T[Path] extends [
               Route<infer PathParams1, infer SearchParams>,
-              Action<infer PathParams2, infer ActionParams>
+              Action<infer PathParams2, infer ActionParams>,
           ]
         ?
               | { path: Path; verb: "get"; pathParams: PathParams1; searchParams: SearchParams }
@@ -163,7 +163,7 @@ function trimSlashes<Path extends string>(path: Path): TrimSlashes<Path> {
 
     return path.slice(
         hasStartingSlash ? 1 : 0,
-        hasEndingSlash ? -1 : undefined
+        hasEndingSlash ? -1 : undefined,
     ) as TrimSlashes<Path>;
 }
 
@@ -173,7 +173,7 @@ function trimSlashes<Path extends string>(path: Path): TrimSlashes<Path> {
  */
 export function joinPaths<Path1 extends string, Path2 extends string>(
     path1: Path1,
-    path2: Path2
+    path2: Path2,
 ): JoinPaths<Path1, Path2> {
     const a = trimSlashes(path1);
     const b = trimSlashes(path2);

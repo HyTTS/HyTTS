@@ -21,7 +21,7 @@ describe("express-router", () => {
 
                 expect(await routeResponse.text()).toBe("r");
                 expect(await actionResponse.text()).toBe("a");
-            }
+            },
         ));
 
     it("uses correct HTTP method for routes and actions", () =>
@@ -36,7 +36,7 @@ describe("express-router", () => {
 
                 expect(routeResponse.status).toBe(404);
                 expect(actionResponse.status).toBe(404);
-            }
+            },
         ));
 
     it("supports nested routing definitions", () =>
@@ -57,7 +57,7 @@ describe("express-router", () => {
                 expect(await (await fetchAction(urls.action("/b/a/"))).text()).toBe("ba");
                 expect(await (await fetchRoute(urls.route("/b/x/"))).text()).toBe("bx");
                 expect(await (await fetchAction(urls.action("/b/y/"))).text()).toBe("by");
-            }
+            },
         ));
 
     it("supports routing definitions with (nested) path params", () =>
@@ -78,7 +78,7 @@ describe("express-router", () => {
                                 {props.pathParams.n}
                                 {props.pathParams.s}
                             </>
-                        )
+                        ),
                     ),
                     "y/:t": action(
                         [],
@@ -88,18 +88,18 @@ describe("express-router", () => {
                                 {props.pathParams.n}
                                 {props.pathParams.t}
                             </>
-                        )
+                        ),
                     ),
                 },
             },
             async (urls, fetchRoute, fetchAction) => {
                 const routeResponse1 = await fetchRoute(urls.route("/r/:a/", { a: 17 }));
                 const routeResponse2 = await fetchRoute(
-                    urls.route("/n/:n/x/:s/", { n: 33, s: "test" })
+                    urls.route("/n/:n/x/:s/", { n: 33, s: "test" }),
                 );
                 const actionResponse1 = await fetchAction(urls.action("/a/:b/", { b: false }));
                 const actionResponse2 = await fetchAction(
-                    urls.action("/n/:n/y/:t/", { n: 4, t: "test" })
+                    urls.action("/n/:n/y/:t/", { n: 4, t: "test" }),
                 );
 
                 expect(routeResponse1.status).toBe(200);
@@ -111,7 +111,7 @@ describe("express-router", () => {
                 expect(await actionResponse1.text()).toBe("false");
                 expect(await routeResponse2.text()).toBe("33test");
                 expect(await actionResponse2.text()).toBe("4test");
-            }
+            },
         ));
 
     it("unifies duplicated path params", () =>
@@ -135,7 +135,7 @@ describe("express-router", () => {
 
                 expect(await routeResponse1.text()).toBe("1");
                 expect(await routeResponse2.text()).toBe("2");
-            }
+            },
         ));
 
     it("supports lazy routing definitions with nested path params", () =>
@@ -151,7 +151,7 @@ describe("express-router", () => {
                                     {props.pathParams.a}
                                     {props.pathParams.s}
                                 </>
-                            )
+                            ),
                         ),
                         "y/:t": action(
                             [],
@@ -161,17 +161,17 @@ describe("express-router", () => {
                                     {props.pathParams.a}
                                     {props.pathParams.t}
                                 </>
-                            )
+                            ),
                         ),
                     },
                 }),
             },
             async (urls, fetchRoute, fetchAction) => {
                 const routeResponse = await fetchRoute(
-                    urls.route("/r/:a/x/:s/", { a: 33, s: "test" })
+                    urls.route("/r/:a/x/:s/", { a: 33, s: "test" }),
                 );
                 const actionResponse = await fetchAction(
-                    urls.action("/r/:a/y/:t/", { a: 4, t: "test" })
+                    urls.action("/r/:a/y/:t/", { a: 4, t: "test" }),
                 );
 
                 expect(routeResponse.status).toBe(200);
@@ -179,7 +179,7 @@ describe("express-router", () => {
 
                 expect(await routeResponse.text()).toBe("33test");
                 expect(await actionResponse.text()).toBe("4test");
-            }
+            },
         ));
 
     it("gracefully handles thrown errors when loading lazy routing definitions", () =>
@@ -203,7 +203,7 @@ describe("express-router", () => {
                     expect(await errorResponse.text()).toBe("Internal Server Error");
                     expect(await routeResponse.text()).toBe("test");
                 }
-            }
+            },
         ));
 
     it("supports search params only for routes", () =>
@@ -217,14 +217,14 @@ describe("express-router", () => {
                             {props.searchParams.a}
                             {props.searchParams.b}
                         </>
-                    )
+                    ),
                 ),
             },
             async (urls, fetchRoute) => {
                 const routeResponse = await fetchRoute(urls.route("/r/", { a: 1, b: "test" }));
                 expect(routeResponse.status).toBe(200);
                 expect(await routeResponse.text()).toBe("1test");
-            }
+            },
         ));
 
     it("supports action params only for actions", () =>
@@ -238,14 +238,14 @@ describe("express-router", () => {
                             {props.actionParams.a}
                             {props.actionParams.b}
                         </>
-                    )
+                    ),
                 ),
             },
             async (urls, _, fetchAction) => {
                 const routeResponse = await fetchAction(urls.action("/r/", { a: 1, b: "test" }));
                 expect(routeResponse.status).toBe(200);
                 expect(await routeResponse.text()).toBe("1test");
-            }
+            },
         ));
 
     it("supports path and search params for routes", () =>
@@ -263,16 +263,16 @@ describe("express-router", () => {
                             {props.searchParams.a}
                             {props.searchParams.b}
                         </>
-                    )
+                    ),
                 ),
             },
             async (urls, fetchRoute) => {
                 const routeResponse = await fetchRoute(
-                    urls.route("/r/:r/", { r: "route" }, { a: 1, b: "test" })
+                    urls.route("/r/:r/", { r: "route" }, { a: 1, b: "test" }),
                 );
                 expect(routeResponse.status).toBe(200);
                 expect(await routeResponse.text()).toBe("route1test");
-            }
+            },
         ));
 
     it("supports path and action params for actions", () =>
@@ -290,16 +290,16 @@ describe("express-router", () => {
                             {props.actionParams.a}
                             {props.actionParams.b}
                         </>
-                    )
+                    ),
                 ),
             },
             async (urls, _, fetchAction) => {
                 const routeResponse = await fetchAction(
-                    urls.action("/r/:r/", { r: "action" }, { a: 1, b: "test" })
+                    urls.action("/r/:r/", { r: "action" }, { a: 1, b: "test" }),
                 );
                 expect(routeResponse.status).toBe(200);
                 expect(await routeResponse.text()).toBe("action1test");
-            }
+            },
         ));
 
     it("supports transformed types for all kinds of params", () =>
@@ -317,7 +317,7 @@ describe("express-router", () => {
                                 {props.pathParams.r.toJSON()}
                                 {props.searchParams.a.toJSON()}
                             </>
-                        )
+                        ),
                     ),
                     action(
                         [],
@@ -330,24 +330,24 @@ describe("express-router", () => {
                                 {props.pathParams.r.toJSON()}
                                 {props.actionParams.a.toJSON()}
                             </>
-                        )
+                        ),
                     ),
                 ],
             },
             async (urls, fetchRoute, fetchAction) => {
                 const data = LocalDate.of(2023, 4, 27);
                 const routeResponse = await fetchRoute(
-                    urls.route("/r/:r/", { r: data }, { a: data })
+                    urls.route("/r/:r/", { r: data }, { a: data }),
                 );
                 expect(routeResponse.status).toBe(200);
                 expect(await routeResponse.text()).toBe("2023-04-272023-04-27");
 
                 const actionResponse = await fetchAction(
-                    urls.action("/r/:r/", { r: data }, { a: data })
+                    urls.action("/r/:r/", { r: data }, { a: data }),
                 );
                 expect(actionResponse.status).toBe(200);
                 expect(await actionResponse.text()).toBe("2023-04-272023-04-27");
-            }
+            },
         ));
 
     it("handles optional params correctly", () => {
@@ -371,7 +371,7 @@ describe("express-router", () => {
                 expect(actionResponse2.status).toBe(200);
                 expect(await actionResponse1.text()).toBe("test");
                 expect(await actionResponse2.text()).toBe("");
-            }
+            },
         );
     });
 
@@ -396,7 +396,7 @@ describe("express-router", () => {
                 expect(actionResponse2.status).toBe(200);
                 expect(await actionResponse1.text()).toBe("test");
                 expect(await actionResponse2.text()).toBe("default");
-            }
+            },
         );
     });
 
@@ -421,7 +421,7 @@ describe("express-router", () => {
                 expect(actionResponse2.status).toBe(200);
                 expect(await actionResponse1.text()).toBe("test");
                 expect(await actionResponse2.text()).toBe("");
-            }
+            },
         );
     });
 
@@ -446,7 +446,7 @@ describe("express-router", () => {
                 expect(actionResponse2.status).toBe(200);
                 expect(await actionResponse1.text()).toBe("test");
                 expect(await actionResponse2.text()).toBe("default");
-            }
+            },
         );
     });
 
@@ -465,7 +465,7 @@ describe("express-router", () => {
                             {searchParams.n}
                             {searchParams.s}
                         </>
-                    )
+                    ),
                 ),
                 "a/:n/": action(
                     [],
@@ -479,22 +479,22 @@ describe("express-router", () => {
                             {actionParams.n}
                             {actionParams.s}
                         </>
-                    )
+                    ),
                 ),
             },
             async (urls, fetchRoute, fetchAction) => {
                 const routeResponse = await fetchRoute(
-                    urls.route("/r/:n/", { n: 1 }, { n: 2, s: "x" })
+                    urls.route("/r/:n/", { n: 1 }, { n: 2, s: "x" }),
                 );
                 expect(routeResponse.status).toBe(200);
                 expect(await routeResponse.text()).toBe("12x");
 
                 const actionResponse = await fetchAction(
-                    urls.action("/a/:n/", { n: 1 }, { n: 2, s: "x" })
+                    urls.action("/a/:n/", { n: 1 }, { n: 2, s: "x" }),
                 );
                 expect(actionResponse.status).toBe(200);
                 expect(await actionResponse.text()).toBe("12x");
-            }
+            },
         ));
 
     it("supports dynamically computed, asynchronous params", () => {
@@ -517,7 +517,7 @@ describe("express-router", () => {
                             {searchParams.n}
                             {searchParams.s}
                         </>
-                    )
+                    ),
                 ),
                 "a/:n/": action(
                     [],
@@ -532,22 +532,22 @@ describe("express-router", () => {
                             {actionParams.n}
                             {actionParams.s}
                         </>
-                    )
+                    ),
                 ),
             },
             async (urls, fetchRoute, fetchAction) => {
                 const routeResponse = await fetchRoute(
-                    urls.route("/r/:n/", { n: 1 }, { n: 2, s: "x" })
+                    urls.route("/r/:n/", { n: 1 }, { n: 2, s: "x" }),
                 );
                 expect(routeResponse.status).toBe(200);
                 expect(await routeResponse.text()).toBe("12x");
 
                 const actionResponse = await fetchAction(
-                    urls.action("/a/:n/", { n: 1 }, { n: 2, s: "x" })
+                    urls.action("/a/:n/", { n: 1 }, { n: 2, s: "x" }),
                 );
                 expect(actionResponse.status).toBe(200);
                 expect(await actionResponse.text()).toBe("12x");
-            }
+            },
         );
     });
 
@@ -568,7 +568,7 @@ describe("express-router", () => {
                         pathParams: () => increaseCount(),
                         searchParams: () => increaseCount(),
                     },
-                    () => <></>
+                    () => <></>,
                 ),
                 "a/:n/": action(
                     [],
@@ -576,7 +576,7 @@ describe("express-router", () => {
                         pathParams: () => increaseCount(),
                         actionParams: () => increaseCount(),
                     },
-                    () => <></>
+                    () => <></>,
                 ),
             },
             async (urls, fetchRoute, fetchAction) => {
@@ -586,7 +586,7 @@ describe("express-router", () => {
                 await fetchAction(urls.action("/a/:n/", {}, {}));
                 expect(state.count).toBe(4);
             },
-            ({ children }) => <appContext.Provider value={state}>{children}</appContext.Provider>
+            ({ children }) => <appContext.Provider value={state}>{children}</appContext.Provider>,
         );
     });
 });

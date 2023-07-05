@@ -36,7 +36,7 @@ export type ActionProps<TPathParams extends ObjectSchema, TActionParams extends 
  */
 export type Route<
     TPathParams extends ObjectSchema,
-    TSearchParams extends ObjectSchema
+    TSearchParams extends ObjectSchema,
 > = ReturnType<typeof route<TPathParams, TSearchParams>>;
 
 /**
@@ -45,7 +45,7 @@ export type Route<
  */
 export type Action<
     TPathParams extends ObjectSchema,
-    TActionParams extends ObjectSchema
+    TActionParams extends ObjectSchema,
 > = ReturnType<typeof action<TPathParams, TActionParams>>;
 
 /**
@@ -62,7 +62,7 @@ export function route<TPathParams extends ObjectSchema, TSearchParams extends Ob
     routeFilters: RouteFilters,
     params: RouteParams<TPathParams, TSearchParams>,
     handler: JsxComponent<RouteProps<TPathParams, TSearchParams>>,
-    options: { readonly noDocument?: boolean } = {}
+    options: { readonly noDocument?: boolean } = {},
 ) {
     return { [routingSymbol]: "route" as const, routeFilters, ...params, handler, options };
 }
@@ -81,7 +81,7 @@ export function action<TPathParams extends ObjectSchema, TActionParams extends O
     actionFilters: RouteFilters,
     params: ActionParams<TPathParams, TActionParams>,
     handler: JsxComponent<ActionProps<TPathParams, TActionParams>>,
-    options: { readonly noDocument?: boolean } = {}
+    options: { readonly noDocument?: boolean } = {},
 ) {
     return { [routingSymbol]: "action" as const, actionFilters, ...params, handler, options };
 }
