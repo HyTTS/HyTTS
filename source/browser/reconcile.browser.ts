@@ -1,3 +1,5 @@
+import { log } from "@/log";
+
 /**
  * Reconciles, i.e., merges, two DOM nodes. Inspired by React's reconciliation algorithm.
  * (see https://reactjs.org/docs/reconciliation.html)
@@ -179,7 +181,7 @@ function getKeyMap(element: Element) {
 
             if (key) {
                 if (keyMap.has(key)) {
-                    console.warn(`Key '${key}' is used more than once.`);
+                    log.warn(`Key '${key}' is used more than once.`);
                 }
                 keyMap.set(key, elementChild);
             }

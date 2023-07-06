@@ -8,10 +8,10 @@ import { Urls, RouteUrl, ActionUrl, createUrls } from "@/routing/urls";
 import { createRenderCallback } from "./http/render-callback";
 import { JsxComponent, PropsWithChildren } from "@/jsx/jsx-types";
 
-type UseAppCallback<TReturn = Promise<void>> = (
+type UseAppCallback<TReturn = void> = (
     fetch: typeof global.fetch,
     baseUrl: string,
-) => TReturn;
+) => TReturn | Promise<TReturn>;
 
 /**
  * Starts an HTTP server for the given Express app on a random port for the duration of the given callback.

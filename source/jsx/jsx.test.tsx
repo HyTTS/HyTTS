@@ -68,8 +68,8 @@ describe("jsx rendering", () => {
 
     describe("event handlers", () => {
         it("ignores `null` and `undefined` values for event handlers", async () => {
-            testJsx(<div browser:onclick={undefined}></div>, "<div></div>");
-            testJsx(<div browser:onclick={null!}></div>, "<div></div>");
+            await testJsx(<div browser:onclick={undefined}></div>, "<div></div>");
+            await testJsx(<div browser:onclick={null!}></div>, "<div></div>");
         });
 
         xit("synthesizes an id if none was explicitly specified", async () => {

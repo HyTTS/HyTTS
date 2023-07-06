@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/consistent-type-definitions */
+
 // See also https://www.typescriptlang.org/docs/handbook/jsx.html
 
 import type { BrowserFunc } from "./browser-script";

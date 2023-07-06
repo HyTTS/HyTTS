@@ -35,6 +35,7 @@ export function toExpressRouter(
                 registerAction(path, def[1]);
             } else if (typeof def === "function") {
                 let nestedRouter: Router | undefined = undefined;
+                // eslint-disable-next-line @typescript-eslint/no-misused-promises
                 expressRouter.use(joinPaths(pathPrefix, path), async (req, res, next) => {
                     if (!nestedRouter) {
                         try {
@@ -72,21 +73,23 @@ export function toExpressRouter(
                 options,
             }: Route<ObjectSchema, ObjectSchema>,
         ) {
-            expressRouter.get(joinPaths(pathPrefix, path), (req, res) =>
-                render(
-                    async () => (
-                        <Handler
-                            pathParams={unpack(await getSchema(pathParams), req.params)}
-                            searchParams={parseUrlSearchParams(
-                                await getSchema(searchParams),
-                                getSearchParams(req),
-                            )}
-                        />
+            expressRouter.get(
+                joinPaths(pathPrefix, path),
+                (req, res) =>
+                    void render(
+                        async () => (
+                            <Handler
+                                pathParams={unpack(await getSchema(pathParams), req.params)}
+                                searchParams={parseUrlSearchParams(
+                                    await getSchema(searchParams),
+                                    getSearchParams(req),
+                                )}
+                            />
+                        ),
+                        res,
+                        routeFilters,
+                        !options.noDocument,
                     ),
-                    res,
-                    routeFilters,
-                    !options.noDocument,
-                ),
             );
         }
 
@@ -100,21 +103,23 @@ export function toExpressRouter(
                 options,
             }: Action<ObjectSchema, ObjectSchema>,
         ) {
-            expressRouter.post(joinPaths(pathPrefix, path), (req, res) =>
-                render(
-                    async () => (
-                        <Handler
-                            pathParams={unpack(await getSchema(pathParams), req.params)}
-                            actionParams={parseUrlSearchParams(
-                                await getSchema(actionParams),
-                                getRequestBody(req),
-                            )}
-                        />
+            expressRouter.post(
+                joinPaths(pathPrefix, path),
+                (req, res) =>
+                    void render(
+                        async () => (
+                            <Handler
+                                pathParams={unpack(await getSchema(pathParams), req.params)}
+                                actionParams={parseUrlSearchParams(
+                                    await getSchema(actionParams),
+                                    getRequestBody(req),
+                                )}
+                            />
+                        ),
+                        res,
+                        actionFilters,
+                        !options.noDocument,
                     ),
-                    res,
-                    actionFilters,
-                    !options.noDocument,
-                ),
             );
         }
     }

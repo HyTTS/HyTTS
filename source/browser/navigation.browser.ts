@@ -69,7 +69,7 @@ type ActionOptions = {
  * of the target's `dataset` property.
  */
 export function interceptClicks() {
-    window.onclick = (e: MouseEvent) => {
+    window.onclick = async (e: MouseEvent) => {
         const target =
             (e.target as Element)?.closest("a") ?? (e.target as Element)?.closest("button");
         const options = target?.dataset as NavigationOptions;
@@ -92,20 +92,20 @@ export function interceptClicks() {
             case "route":
                 // Only update the history if so configured. If nothing is specified, update the history by default
                 // for the document body, but not for all other frames.
-                (options.hyUpdateHistory ?? options.hyFrame === "body"
+                await (options.hyUpdateHistory ?? options.hyFrame === "body"
                     ? navigateToRoute
                     : loadRoute)(options.hyFrame, href);
                 break;
             case "action":
                 if (options.hyHistoryUrl) {
-                    navigateToAction(
+                    await navigateToAction(
                         options.hyFrame,
                         href,
                         options.hyActionParams ?? "",
                         options.hyHistoryUrl,
                     );
                 } else {
-                    executeAction(options.hyFrame, href, options.hyActionParams ?? "");
+                    await executeAction(options.hyFrame, href, options.hyActionParams ?? "");
                 }
                 break;
             case undefined:
