@@ -1,0 +1,25 @@
+name: Validate code quality
+on: [push, pull_request]
+
+jobs:
+    execute:
+        name: Run validations
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout branch
+              uses: actions/checkout@v3
+            - name: Setup node
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 20
+                  cache: yarn
+            - name: Install dependencies
+              run: yarn install --frozen-lockfile
+            - name: Typecheck
+              run: yarn typecheck:run
+            - name: Lint
+              run: yarn lint
+            - name: Check formatting
+              run: yarn format:check
+            - name: Run tests
+              run: yarn test:run

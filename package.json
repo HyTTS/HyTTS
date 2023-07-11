@@ -4,7 +4,7 @@
     "author": "Axel Habermaier",
     "license": "MIT",
     "homepage": "https://github.com/HyTTS/HyTTS",
-    "description": "HyTTS (pronounced 'heights') is a framework for server-side rendered web apps based on TypeScript. ",
+    "description": "HyTTS (pronounced 'heights') is a framework for server-side rendered web apps, inspired by React, Turbo, and htmx.",
     "keywords": [
         "TypeScript",
         "HyTTS",
