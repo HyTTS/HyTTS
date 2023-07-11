@@ -1,5 +1,5 @@
 {
-    "include": ["./source/**/*.ts", "./source/**/*.tsx"],
+    "include": ["jest.setup.ts", "./source/**/*.ts", "./source/**/*.tsx"],
     "compilerOptions": {
         "lib": ["DOM", "DOM.Iterable", "ES2022"],
         "isolatedModules": true,
@@ -14,7 +14,9 @@
         "noImplicitThis": true,
         "noImplicitAny": true,
         "noImplicitOverride": true,
+        "allowUnreachableCode": false,
         "useUnknownInCatchVariables": true,
+        "noErrorTruncation": true,
         "strictNullChecks": true,
         "composite": false,
         "skipLibCheck": false,

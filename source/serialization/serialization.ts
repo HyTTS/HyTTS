@@ -66,11 +66,13 @@ const supporedFirstPartyTypes: Record<ZodFirstPartyTypeKind, boolean> = {
     [z.ZodFirstPartyTypeKind.ZodOptional]: true,
     [z.ZodFirstPartyTypeKind.ZodNullable]: true,
     [z.ZodFirstPartyTypeKind.ZodDefault]: true,
-    [z.ZodFirstPartyTypeKind.ZodAny]: true, // because of `z.custom()`
     [z.ZodFirstPartyTypeKind.ZodUnknown]: true,
 
-    // Zod types with partial support (mostly HyTTS-internal):
-    [z.ZodFirstPartyTypeKind.ZodUnion]: false,
+    // Zod types with partial support:
+    [z.ZodFirstPartyTypeKind.ZodUnion]: false, // mostly HyTTS-internal
+    [z.ZodFirstPartyTypeKind.ZodAny]:
+        true /* because of `z.custom()`, must not be used for structured data
+                and be able to convert from string */,
 
     // Currenly unsupported Zod types, but might potentially be supported in the future:
     [z.ZodFirstPartyTypeKind.ZodNaN]: false,

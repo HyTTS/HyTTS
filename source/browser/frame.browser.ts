@@ -155,7 +155,7 @@ export async function updateFrame(
     // because the current frame might have new frame children with the same child frame ids as
     // before, but the updates for the old child frames should not affect the new child frames.
     const childFrames = [...document.querySelectorAll("hy-frame")].filter(
-        (frame) => frame !== frame && frame.contains(frame),
+        (childFrame) => childFrame !== frame && frame.contains(childFrame),
     );
 
     // Start the new update and store it and a new abort controller as a pending update of the frame,
