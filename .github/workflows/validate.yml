@@ -23,3 +23,5 @@ jobs:
               run: yarn format:check
             - name: Run tests
               run: yarn test:run
+            - name: Build
+              run: yarn build
