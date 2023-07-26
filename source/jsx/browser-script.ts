@@ -199,7 +199,7 @@ function serializeScript<TContext extends CapturedVariable[]>(
     return (registerFunction: (func: BrowserFunc<any>) => string) => ({
         script: script.toString(),
         context: context
-            ?.map((value) => {
+            .map((value) => {
                 if (value === undefined) return "undefined";
                 if (value === null) return "null";
                 if (typeof value === "boolean") return value ? "true" : "false";

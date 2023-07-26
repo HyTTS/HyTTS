@@ -9,7 +9,7 @@ import { createRenderCallback } from "./http/render-callback";
 import { JsxComponent, PropsWithChildren } from "@/jsx/jsx-types";
 
 type UseAppCallback<TReturn = void> = (
-    fetch: typeof global.fetch,
+    fetch: (url: string, init?: RequestInit) => Promise<Response>,
     baseUrl: string,
 ) => TReturn | Promise<TReturn>;
 

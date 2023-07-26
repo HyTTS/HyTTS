@@ -71,8 +71,8 @@ type ActionOptions = {
 export function interceptClicks() {
     window.onclick = async (e: MouseEvent) => {
         const target =
-            (e.target as Element)?.closest("a") ?? (e.target as Element)?.closest("button");
-        const options = target?.dataset as NavigationOptions;
+            (e.target as Element).closest("a") ?? (e.target as Element).closest("button");
+        const options = target?.dataset as NavigationOptions | undefined;
 
         if (!target || !options || !options.hyNavigate) {
             return;

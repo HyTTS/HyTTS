@@ -53,7 +53,7 @@ import mapValues from "lodash/mapValues";
 export function toPartialSchema<T extends ZodTypeAny>(schema: T): ToPartialSchema<T> {
     return recurse(schema) as any;
 
-    function recurse(schema: ZodType<any>): ZodType<any> {
+    function recurse(schema: ZodType): ZodType {
         if (schema instanceof ZodString) {
             // Ignore all validations defined for a string schema by creating a new one.
             return z.string();

@@ -42,7 +42,7 @@ function reconcileNode<T extends Node | Element>(currentNode: T, newNode: T): T 
 function reconcileElement(currentElement: Element, newElement: Element) {
     reconcileAttributes(currentElement, newElement);
 
-    const hasChildren = currentElement.firstChild || newElement.firstChild;
+    const hasChildren = currentElement.firstChild ?? newElement.firstChild;
     if (hasChildren) {
         reconcileChildren(currentElement, newElement);
     }
@@ -80,7 +80,7 @@ function reconcileChildren(currentElement: Element, newElement: Element) {
     let currentChild = currentElement.firstChild;
     let newChild = newElement.firstChild;
 
-    while (currentChild || newChild) {
+    while (currentChild ?? newChild) {
         // There are more current children than new ones, so remove the superfluous ones.
         if (currentChild && !newChild) {
             const oldCurrent = currentChild;
@@ -200,8 +200,9 @@ function getKeyMap(element: Element) {
  * would block script execution if we didn't set the original nonce of the current page.
  */
 function prepareScriptElements(newElement: Element) {
-    const cspNonce = (document.querySelector('meta[name="hy-csp-nonce"]') as HTMLMetaElement)
-        ?.content;
+    const cspNonce = (
+        document.querySelector('meta[name="hy-csp-nonce"]') as HTMLMetaElement | undefined
+    )?.content;
 
     // Unfortunately, when using `DOMParser.praseFromString`, all `script` elements are disabled, see
     // https://www.w3.org/TR/DOM-Parsing/#widl-DOMParser-parseFromString-Document-DOMString-str-SupportedType-type

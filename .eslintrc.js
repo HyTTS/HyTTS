@@ -9,10 +9,13 @@ module.exports = {
         project: ["./tsconfig.json"],
     },
     reportUnusedDisableDirectives: true,
-    extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
+    extends: [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/strict-type-checked",
+        "plugin:@typescript-eslint/stylistic-type-checked",
+    ],
     plugins: ["no-relative-import-paths"],
     rules: {
-        "@typescript-eslint/await-thenable": "error",
         "@typescript-eslint/ban-ts-comment": "off",
         "@typescript-eslint/ban-types": [
             "error",
@@ -23,40 +26,22 @@ module.exports = {
                 },
             },
         ],
-        "@typescript-eslint/consistent-generic-constructors": "warn",
-        "@typescript-eslint/consistent-type-assertions": "error",
         "@typescript-eslint/consistent-type-definitions": ["error", "type"],
-        "@typescript-eslint/default-param-last": "error",
-        "@typescript-eslint/explicit-module-boundary-types": "off",
-        "@typescript-eslint/member-ordering": [
-            "error",
-            {
-                classes: ["field", "constructor", "method"],
-            },
-        ],
-        "@typescript-eslint/naming-convention": [
-            "error",
-            {
-                selector: ["class", "typeAlias"],
-                format: ["PascalCase"],
-            },
-        ],
         "@typescript-eslint/no-empty-function": "off",
         "@typescript-eslint/no-empty-interface": "off",
         "@typescript-eslint/no-explicit-any": "off",
-        "@typescript-eslint/no-floating-promises": "error",
-        "@typescript-eslint/no-implicit-any-catch": ["warn", { allowExplicitAny: true }],
-        "@typescript-eslint/no-misused-promises": [
+        "@typescript-eslint/no-unsafe-member-access": "off",
+        "@typescript-eslint/no-unsafe-argument": "off",
+        "@typescript-eslint/no-unsafe-return": "off",
+        "@typescript-eslint/no-unsafe-call": "off",
+        "@typescript-eslint/no-unsafe-assignment": "off",
+        "@typescript-eslint/restrict-template-expressions": "off",
+        "@typescript-eslint/no-base-to-string": "off",
+        "@typescript-eslint/no-confusing-void-expression": [
             "error",
-            {
-                checksVoidReturn: {
-                    // Suppress errors in JSX handlers
-                    attributes: false,
-                },
-            },
+            { ignoreArrowShorthand: true },
         ],
         "@typescript-eslint/no-non-null-assertion": "off",
-        "@typescript-eslint/method-signature-style": "error",
         "@typescript-eslint/no-unused-vars": [
             "warn",
             {
@@ -67,9 +52,6 @@ module.exports = {
             },
         ],
         "@typescript-eslint/no-var-requires": "off",
-        "@typescript-eslint/prefer-includes": "error",
-        "@typescript-eslint/prefer-string-starts-ends-with": "error",
-        "default-case-last": "error",
         eqeqeq: ["error", "always"],
         "no-console": "error",
         "no-constructor-return": "error",

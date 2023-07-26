@@ -54,7 +54,7 @@ export function toUrlSearchParams<T extends Record<string, unknown>>(
         arrayFormat: "indices",
         // Replace `a[0]` with `a.0` (which does not require URL encoding) to make URLs more readable.
         // For some reason, with `allowDots` above, qs only does this for object keys but not for array indices.
-        encoder: (value, _, __, mode) =>
+        encoder: (value: string, _, __, mode) =>
             encodeURIComponent(
                 mode === "key" ? value.replaceAll("]", "").replaceAll("[", ".") : value,
             ),

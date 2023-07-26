@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
 /* eslint-disable @typescript-eslint/consistent-type-definitions */
 
 // See also https://www.typescriptlang.org/docs/handbook/jsx.html
