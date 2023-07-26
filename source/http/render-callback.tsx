@@ -91,7 +91,7 @@ export function createRenderCallback({
             return <ErrorView {...props} />;
         }
 
-        function render(Component: JsxComponent<{}>) {
+        function render(Component: JsxComponent) {
             return renderToString(
                 <HttpContextProvider value={res}>
                     <CspNonceProvider value={randomBytes(32).toString("base64")}>

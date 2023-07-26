@@ -120,15 +120,15 @@ describe("URL search params", () => {
         ).toEqual({ o: [[true, false]] });
     });
 
-    each([0, 10, -10, 3.14]).it("should roundtrip number '%s'", (n) => {
+    each([0, 10, -10, 3.14]).it("should roundtrip number '%s'", (n: number) => {
         expect(roundtrip(z.object({ n: z.number() }), { n })).toEqual({ n });
     });
 
-    each([true, false]).it("should roundtrip boolean '%s'", (b) => {
+    each([true, false]).it("should roundtrip boolean '%s'", (b: boolean) => {
         expect(roundtrip(z.object({ b: z.boolean() }), { b })).toEqual({ b });
     });
 
-    each(["", "  ", "test", "\"'\\"]).it("should roundtrip string '%s'", (s) => {
+    each(["", "  ", "test", "\"'\\"]).it("should roundtrip string '%s'", (s: string) => {
         expect(roundtrip(z.object({ s: z.string() }), { s })).toEqual({ s });
     });
 

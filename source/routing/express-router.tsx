@@ -57,9 +57,7 @@ export function toExpressRouter(
                     visit(def, joinPaths(pathPrefix, path));
                 }
             } else {
-                log.warn(
-                    `Ignored unsupported routing definition '${routingDefinition}' at '${path}'.`,
-                );
+                log.warn(`Ignored unsupported routing definition at '${path}'.`);
             }
         }
 

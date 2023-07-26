@@ -276,9 +276,9 @@ describe("structural form schema", () => {
                     a: z
                         .boolean()
                         .array()
-                        .transform(async (a) => a.length),
+                        .transform((a) => Promise.resolve(a.length)),
                 })
-                .transform(async (o) => ({ x: o.a })),
+                .transform((o) => Promise.resolve({ x: o.a })),
         );
 
         const parseResult = await schema.parseAsync({ a: [true, false] });
@@ -307,7 +307,7 @@ describe("structural form schema", () => {
     it("ignores async refinements", () => {
         const schema = toPartialSchema(
             z.object({
-                s: z.string().refine(async () => false),
+                s: z.string().refine(() => Promise.resolve(false)),
             }),
         );
 

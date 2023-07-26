@@ -141,30 +141,31 @@ describe("express-router", () => {
     it("supports lazy routing definitions with nested path params", () =>
         runTestApp(
             {
-                "r/:a": async () => ({
-                    default: {
-                        "x/:s": route(
-                            [],
-                            { pathParams: z.object({ a: z.number(), s: z.string() }) },
-                            (props) => (
-                                <>
-                                    {props.pathParams.a}
-                                    {props.pathParams.s}
-                                </>
+                "r/:a": () =>
+                    Promise.resolve({
+                        default: {
+                            "x/:s": route(
+                                [],
+                                { pathParams: z.object({ a: z.number(), s: z.string() }) },
+                                (props) => (
+                                    <>
+                                        {props.pathParams.a}
+                                        {props.pathParams.s}
+                                    </>
+                                ),
                             ),
-                        ),
-                        "y/:t": action(
-                            [],
-                            { pathParams: z.object({ a: z.number(), t: z.string() }) },
-                            (props) => (
-                                <>
-                                    {props.pathParams.a}
-                                    {props.pathParams.t}
-                                </>
+                            "y/:t": action(
+                                [],
+                                { pathParams: z.object({ a: z.number(), t: z.string() }) },
+                                (props) => (
+                                    <>
+                                        {props.pathParams.a}
+                                        {props.pathParams.t}
+                                    </>
+                                ),
                             ),
-                        ),
-                    },
-                }),
+                        },
+                    }),
             },
             async (urls, fetchRoute, fetchAction) => {
                 const routeResponse = await fetchRoute(
@@ -185,9 +186,8 @@ describe("express-router", () => {
     it("gracefully handles thrown errors when loading lazy routing definitions", () =>
         runTestApp(
             {
-                "r/": async (): Promise<{ default: { x: Route<any, any> } }> => {
-                    throw new Error("test");
-                },
+                "r/": (): Promise<{ default: { x: Route<any, any> } }> =>
+                    Promise.reject(new Error("test")),
                 "t/": route([], {}, () => <>test</>),
             },
             async (urls, fetchRoute) => {
@@ -404,8 +404,8 @@ describe("express-router", () => {
         const schema = z.object({ a: z.string().optional() });
         return runTestApp(
             {
-                "/a": route([], { searchParams: schema }, (props) => <>{props.searchParams?.a}</>),
-                "/b": action([], { actionParams: schema }, (props) => <>{props.actionParams?.a}</>),
+                "/a": route([], { searchParams: schema }, (props) => <>{props.searchParams.a}</>),
+                "/b": action([], { actionParams: schema }, (props) => <>{props.actionParams.a}</>),
             },
             async (urls, fetchRoute, fetchAction) => {
                 const routeResponse1 = await fetchRoute(urls.route("/a/", { a: "test" }));

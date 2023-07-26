@@ -6,6 +6,8 @@ import { z } from "zod";
 describe("data packing", () => {
     it("handles `undefined`", () => {
         expect(pack(undefined)).toBe(undefined);
+        // eslint bug, this is actually *NOT* a void expression
+        // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
         expect(unpack(z.undefined(), undefined)).toBe(undefined);
         expect(() => unpack(z.undefined(), "test")).toThrow("Expected undefined, received string");
     });

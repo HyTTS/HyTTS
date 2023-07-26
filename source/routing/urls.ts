@@ -34,8 +34,8 @@ export type Urls<T extends RoutingDefinition> = ReturnType<
  */
 export function createUrls<
     T extends RoutingDefinition,
-    Get extends Record<string, Array<any>> = GetEndpoints<ToEndpoints<T>>,
-    Post extends Record<string, Array<any>> = PostEndpoints<ToEndpoints<T>>,
+    Get extends Record<string, any[]> = GetEndpoints<ToEndpoints<T>>,
+    Post extends Record<string, any[]> = PostEndpoints<ToEndpoints<T>>,
 >(
     // This parameter is only used for type inference. We don't use the route definition's data directly,
     // as we don't want to load the associated modules just because we have to generate some URL.
@@ -50,12 +50,12 @@ export function createUrls<
     return {
         route: (route: string, ...params: Record<string, unknown>[]) => {
             const hasPathParams = route.includes(":");
-            const searchParams = params?.[hasPathParams ? 1 : 0];
+            const searchParams = params[hasPathParams ? 1 : 0];
             const urlSearchParams = toUrlSearchParams(searchParams);
 
             return {
                 url:
-                    (hasPathParams ? replacePathParams(route, params?.[0]) : route) +
+                    (hasPathParams ? replacePathParams(route, params[0]) : route) +
                     (urlSearchParams ? `?${urlSearchParams}` : ""),
                 [routeUrlSymbol]: null,
             };
@@ -64,8 +64,8 @@ export function createUrls<
         action: (action: string, ...params: Record<string, unknown>[]) => {
             const hasPathParams = action.includes(":");
             return {
-                url: hasPathParams ? replacePathParams(action, params?.[0]) : action,
-                actionParams: toUrlSearchParams(params?.[hasPathParams ? 1 : 0]),
+                url: hasPathParams ? replacePathParams(action, params[0]) : action,
+                actionParams: toUrlSearchParams(params[hasPathParams ? 1 : 0]),
                 [actionUrlSymbol]: null,
             };
         },

@@ -110,6 +110,8 @@ export function AbsoluteRedirect(props: AbsoluteRedirectProps): JsxElement {
  * to be URL encoded, but that is not checked here.
  */
 export function getSearchParams(req: Request): string {
+    // The type is wrong here because we're actually not using qs
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (req.query && typeof req.query !== "string") {
         throw new Error(
             "Expected URL query string to be unparsed. Make sure you've disabled query string parsing in " +

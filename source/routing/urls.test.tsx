@@ -92,9 +92,10 @@ describe("urls", () => {
 
     it("supports lazy routing definitions", () => {
         const urls = createUrls({
-            lazy: async () => ({
-                default: { r: route([], {}, handler), a: action([], {}, handler) },
-            }),
+            lazy: () =>
+                Promise.resolve({
+                    default: { r: route([], {}, handler), a: action([], {}, handler) },
+                }),
         });
 
         expect(urls.route("/lazy/r/").url).toBe("/lazy/r/");
@@ -108,20 +109,21 @@ describe("urls", () => {
 
     it("supports lazy routing definitions with nested path params", () => {
         const urls = createUrls({
-            "n/:n": async () => ({
-                default: {
-                    "x/:s": route(
-                        [],
-                        { pathParams: z.object({ n: z.number(), s: z.string() }) },
-                        handler,
-                    ),
-                    "y/:t": action(
-                        [],
-                        { pathParams: z.object({ n: z.number(), t: z.string() }) },
-                        handler,
-                    ),
-                },
-            }),
+            "n/:n": () =>
+                Promise.resolve({
+                    default: {
+                        "x/:s": route(
+                            [],
+                            { pathParams: z.object({ n: z.number(), s: z.string() }) },
+                            handler,
+                        ),
+                        "y/:t": action(
+                            [],
+                            { pathParams: z.object({ n: z.number(), t: z.string() }) },
+                            handler,
+                        ),
+                    },
+                }),
         });
 
         expect(urls.route("/n/:n/x/:s/", { n: 1, s: "s" }).url).toBe("/n/1/x/s/");
@@ -146,9 +148,10 @@ describe("urls", () => {
         const urls = createUrls({
             "r/:n/:n": route([], { pathParams }, handler),
             "n/:n": { "x/:n": route([], { pathParams }, handler) },
-            "m/:n": async () => ({
-                default: { "x/:n": route([], { pathParams }, handler) },
-            }),
+            "m/:n": () =>
+                Promise.resolve({
+                    default: { "x/:n": route([], { pathParams }, handler) },
+                }),
         });
 
         expect(urls.route("/r/:n/:n/", { n: 1 }).url).toBe("/r/1/1/");
