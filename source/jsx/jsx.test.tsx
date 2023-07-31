@@ -1,3 +1,5 @@
+/* eslint-disable jest/expect-expect */
+
 import { createContext, useContext } from "@/jsx/context";
 import { ErrorBoundary } from "@/jsx/error-boundary";
 import { jsxs, renderToString } from "@/jsx/jsx-runtime";
@@ -72,17 +74,11 @@ describe("jsx rendering", () => {
             await testJsx(<div browser:onclick={null!}></div>, "<div></div>");
         });
 
-        xit("synthesizes an id if none was explicitly specified", async () => {
-            // TODO
-        });
+        it.todo("synthesizes an id if none was explicitly specified");
 
-        xit("renders the script to attach an event handler", async () => {
-            // TODO
-        });
+        it.todo("renders the script to attach an event handler");
 
-        xit("throws when an unsupported value is set for an event handler", async () => {
-            // TODO
-        });
+        it.todo("throws when an unsupported value is set for an event handler");
     });
 
     describe("children", () => {

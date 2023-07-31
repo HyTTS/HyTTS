@@ -298,6 +298,9 @@ describe("urls", () => {
             "/a": route([], {}, () => <Redirect to={urls.route("/b/")} />),
             "/b": route([], {}, handler),
         });
+
+        expect(urls.route("/a/").url).toBe("/a/");
+        expect(urls.route("/b/").url).toBe("/b/");
     });
 });
 

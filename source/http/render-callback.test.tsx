@@ -106,7 +106,7 @@ describe("renderer", () => {
 
         expect(res.statusCode).toBe(200);
         expect(res.content).toBe("test");
-        expect(res.headers).toEqual([["x-test", "test"]]);
+        expect(res.headers).toStrictEqual([["x-test", "test"]]);
     });
 
     it("handles errors during JSX rendering in a document", async () => {
@@ -211,7 +211,7 @@ describe("renderer", () => {
                 [],
                 false,
             ),
-        ).rejects.toThrowError();
+        ).rejects.toThrow();
     });
 
     it("makes the app context available to the handler", async () => {

@@ -46,7 +46,7 @@ describe("reconcile", () => {
                 const div2 = create("div");
 
                 expect(reconcile(div1, div2)).toBe(div1);
-                expect(div1.getAttribute("id")).toBe(null);
+                expect(div1.getAttribute("id")).toBeNull();
             });
 
             it("updates changed attributes", () => {
@@ -64,7 +64,7 @@ describe("reconcile", () => {
                 const div2 = create("div", { "data-hy-view-x": "abc" });
 
                 expect(reconcile(div1, div2)).toBe(div1);
-                expect(div1.getAttribute("data-hy-view-x")).toBe(null);
+                expect(div1.getAttribute("data-hy-view-x")).toBeNull();
             });
 
             it("does not remove view-only attributes", () => {
@@ -96,7 +96,7 @@ describe("reconcile", () => {
                 expect(textarea1.style.height).toBe("500px");
             });
 
-            // TODO: Tests for style merging once implemented.
+            it.todo("merges styles");
         });
     });
 
@@ -110,7 +110,7 @@ describe("reconcile", () => {
                 div2.append(p, span);
 
                 expect(reconcile(div1, div2)).toBe(div1);
-                expect(getChildren(div1)).toEqual([p, span]);
+                expect(getChildren(div1)).toStrictEqual([p, span]);
             });
 
             it("adds new children at the end", () => {
@@ -124,7 +124,7 @@ describe("reconcile", () => {
                 div2.append(a2, p);
 
                 expect(reconcile(div1, div2)).toBe(div1);
-                expect(getChildren(div1)).toEqual([a1, p]);
+                expect(getChildren(div1)).toStrictEqual([a1, p]);
             });
 
             it("adds new children at the beginning", () => {
@@ -138,7 +138,7 @@ describe("reconcile", () => {
                 div2.append(p, a2);
 
                 expect(reconcile(div1, div2)).toBe(div1);
-                expect(getChildren(div1)).toEqual([p, a2]); // a1 cannot be reconciled here
+                expect(getChildren(div1)).toStrictEqual([p, a2]); // a1 cannot be reconciled here
             });
 
             it("adds new children in the middle", () => {
@@ -154,7 +154,7 @@ describe("reconcile", () => {
                 div2.append(a2, span, p2);
 
                 expect(reconcile(div1, div2)).toBe(div1);
-                expect(getChildren(div1)).toEqual([a1, span, p2]); // p1 cannot be reconciled here
+                expect(getChildren(div1)).toStrictEqual([a1, span, p2]); // p1 cannot be reconciled here
             });
         });
 
@@ -167,7 +167,7 @@ describe("reconcile", () => {
                 div1.append(p, span);
 
                 expect(reconcile(div1, div2)).toBe(div1);
-                expect(getChildren(div1)).toEqual([]);
+                expect(getChildren(div1)).toStrictEqual([]);
             });
 
             it("removes children at the end", () => {
@@ -181,7 +181,7 @@ describe("reconcile", () => {
                 div2.append(a2);
 
                 expect(reconcile(div1, div2)).toBe(div1);
-                expect(getChildren(div1)).toEqual([a1]);
+                expect(getChildren(div1)).toStrictEqual([a1]);
             });
 
             it("removes children at the beginning", () => {
@@ -195,7 +195,7 @@ describe("reconcile", () => {
                 div2.append(a2);
 
                 expect(reconcile(div1, div2)).toBe(div1);
-                expect(getChildren(div1)).toEqual([a2]); // a1 cannot be reconciled here
+                expect(getChildren(div1)).toStrictEqual([a2]); // a1 cannot be reconciled here
             });
 
             it("removes children in the middle", () => {
@@ -211,7 +211,7 @@ describe("reconcile", () => {
                 div2.append(a2, p2);
 
                 expect(reconcile(div1, div2)).toBe(div1);
-                expect(getChildren(div1)).toEqual([a1, p2]); // p1 cannot be reconciled here
+                expect(getChildren(div1)).toStrictEqual([a1, p2]); // p1 cannot be reconciled here
             });
         });
 
@@ -226,7 +226,7 @@ describe("reconcile", () => {
                 div2.append(p2);
 
                 expect(reconcile(div1, div2)).toBe(div1);
-                expect(getChildren(div1)).toEqual([p1]);
+                expect(getChildren(div1)).toStrictEqual([p1]);
                 expect(p1.getAttribute("id")).toBe("def");
             });
 
@@ -243,8 +243,8 @@ describe("reconcile", () => {
                 div2.append(p2);
 
                 expect(reconcile(div1, div2)).toBe(div1);
-                expect(getChildren(div1)).toEqual([p1]);
-                expect(getChildren(p1)).toEqual([span]);
+                expect(getChildren(div1)).toStrictEqual([p1]);
+                expect(getChildren(p1)).toStrictEqual([span]);
             });
 
             it("replaces children of children", () => {
@@ -262,8 +262,8 @@ describe("reconcile", () => {
                 div2.append(p2);
 
                 expect(reconcile(div1, div2)).toBe(div1);
-                expect(getChildren(div1)).toEqual([p1]);
-                expect(getChildren(p1)).toEqual([span]);
+                expect(getChildren(div1)).toStrictEqual([p1]);
+                expect(getChildren(p1)).toStrictEqual([span]);
             });
         });
 
@@ -289,8 +289,8 @@ describe("reconcile", () => {
                 div2.append(script2);
 
                 expect(reconcile(div1, div2)).toBe(div1);
-                expect(getChildren(div1)[0]).not.toEqual(script1);
-                expect(getChildren(div1)[0]).not.toEqual(script2);
+                expect(getChildren(div1)[0]).not.toStrictEqual(script1);
+                expect(getChildren(div1)[0]).not.toStrictEqual(script2);
             });
         });
 
@@ -308,7 +308,7 @@ describe("reconcile", () => {
                 div2.append(p, a2, span2);
 
                 expect(reconcile(div1, div2)).toBe(div1);
-                expect(getChildren(div1)).toEqual([p, a1, span1]);
+                expect(getChildren(div1)).toStrictEqual([p, a1, span1]);
                 expect(span1.getAttribute("id")).toBe("test");
             });
 
@@ -325,7 +325,7 @@ describe("reconcile", () => {
                 div2.append(p, a2, span2);
 
                 expect(reconcile(div1, div2)).toBe(div1);
-                expect(getChildren(div1)).toEqual([p, a1, span1]);
+                expect(getChildren(div1)).toStrictEqual([p, a1, span1]);
                 expect(span1.getAttribute("id")).toBe("test");
             });
 
@@ -344,7 +344,7 @@ describe("reconcile", () => {
                 div2.append(a2, span2, p, b2);
 
                 expect(reconcile(div1, div2)).toBe(div1);
-                expect(getChildren(div1)).toEqual([a1, span1, p, b1]);
+                expect(getChildren(div1)).toStrictEqual([a1, span1, p, b1]);
                 expect(span1.getAttribute("id")).toBe("test");
             });
 
@@ -363,7 +363,7 @@ describe("reconcile", () => {
                 div2.append(a2, span2, b2);
 
                 expect(reconcile(div1, div2)).toBe(div1);
-                expect(getChildren(div1)).toEqual([a1, span1, b1]);
+                expect(getChildren(div1)).toStrictEqual([a1, span1, b1]);
                 expect(span1.getAttribute("id")).toBe("test");
             });
 
@@ -383,7 +383,7 @@ describe("reconcile", () => {
                 div2.append(b2, p2, span2, a2);
 
                 expect(reconcile(div1, div2)).toBe(div1);
-                expect(getChildren(div1)).toEqual([b1, p1, span1, a1]);
+                expect(getChildren(div1)).toStrictEqual([b1, p1, span1, a1]);
                 expect(span1.getAttribute("id")).toBe("test");
             });
 
@@ -401,7 +401,7 @@ describe("reconcile", () => {
                 div2.append(a2, p2, b2);
 
                 expect(reconcile(div1, div2)).toBe(div1);
-                expect(getChildren(div1)).toEqual([a1, p2, b1]);
+                expect(getChildren(div1)).toStrictEqual([a1, p2, b1]);
             });
 
             it("does not reconcile different elements with same key while reordering", () => {
@@ -418,7 +418,7 @@ describe("reconcile", () => {
                 div2.append(p2, b2, a2);
 
                 expect(reconcile(div1, div2)).toBe(div1);
-                expect(getChildren(div1)).toEqual([p2, b1, a1]);
+                expect(getChildren(div1)).toStrictEqual([p2, b1, a1]);
             });
         });
     });

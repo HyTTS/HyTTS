@@ -12,7 +12,7 @@ describe("structural form schema", () => {
         );
 
         const parseResult = schema.parse({ n: null, d: undefined });
-        expect(parseResult).toEqual({ n: null, d: undefined });
+        expect(parseResult).toStrictEqual({ n: null, d: undefined });
 
         const x: { n: string | number | null; d?: string | number | undefined } = parseResult;
         const y: typeof parseResult = x;
@@ -28,7 +28,7 @@ describe("structural form schema", () => {
         );
 
         const parseResult = schema.parse({});
-        expect(parseResult).toEqual({ n: 1, s: "test", b: true });
+        expect(parseResult).toStrictEqual({ n: 1, s: "test", b: true });
 
         const x: { n: number | string; s: string; b: boolean | string } = parseResult;
         const y: typeof parseResult = x;
@@ -38,10 +38,10 @@ describe("structural form schema", () => {
         const schema = toPartialSchema(z.object({ b: z.number(), d: zLocalDate() }));
 
         const parseResult1 = schema.parse({ b: 3, d: "test" });
-        expect(parseResult1).toEqual({ b: 3, d: "test" });
+        expect(parseResult1).toStrictEqual({ b: 3, d: "test" });
 
         const parseResult2 = schema.parse({ b: "test", d: LocalDate.of(2023, 12, 1) });
-        expect(parseResult2).toEqual({ b: "test", d: LocalDate.of(2023, 12, 1) });
+        expect(parseResult2).toStrictEqual({ b: "test", d: LocalDate.of(2023, 12, 1) });
 
         const x: { b: number | string; d: LocalDate | string } = parseResult1;
         const y: typeof parseResult1 = x;
@@ -49,12 +49,12 @@ describe("structural form schema", () => {
 
     it("supports object schema modifiers", () => {
         const schema1 = toPartialSchema(z.object({ b: z.number() }).strict());
-        expect(() => schema1.parse({ b: 3, d: true })).toThrowError("Unrecognized key(s)");
+        expect(() => schema1.parse({ b: 3, d: true })).toThrow("Unrecognized key(s)");
 
         const schema2 = toPartialSchema(z.object({ b: z.number() }).passthrough());
 
         const parseResult2 = schema2.parse({ b: 3, d: true });
-        expect(parseResult2).toEqual({ b: 3, d: true });
+        expect(parseResult2).toStrictEqual({ b: 3, d: true });
 
         const x2: { b: number | string } = parseResult2;
         const y2: typeof parseResult2 = x2;
@@ -62,7 +62,7 @@ describe("structural form schema", () => {
         const schema3 = toPartialSchema(z.object({ b: z.number() }).partial());
 
         const parseResult3 = schema3.parse({});
-        expect(parseResult3).toEqual({});
+        expect(parseResult3).toStrictEqual({});
 
         const x3: { b?: number | string } = parseResult3;
         const y3: typeof parseResult3 = x3;
@@ -74,10 +74,10 @@ describe("structural form schema", () => {
         );
 
         const parseResult1 = schema.parse({ b: ["a", "b"], d: ["test"] });
-        expect(parseResult1).toEqual({ b: ["a", "b"], d: ["test"] });
+        expect(parseResult1).toStrictEqual({ b: ["a", "b"], d: ["test"] });
 
         const parseResult2 = schema.parse({ b: [3, -1], d: [LocalDate.of(2020, 2, 1)] });
-        expect(parseResult2).toEqual({ b: [3, -1], d: [LocalDate.of(2020, 2, 1)] });
+        expect(parseResult2).toStrictEqual({ b: [3, -1], d: [LocalDate.of(2020, 2, 1)] });
 
         const x: { b: (number | string)[]; d: (string | LocalDate)[] } = parseResult1;
         const y: typeof parseResult1 = x;
@@ -89,10 +89,10 @@ describe("structural form schema", () => {
         );
 
         const parseResult1 = schema.parse({ b: [{ x: ["a", "b"] }, { x: ["c", "d"] }] });
-        expect(parseResult1).toEqual({ b: [{ x: ["a", "b"] }, { x: ["c", "d"] }] });
+        expect(parseResult1).toStrictEqual({ b: [{ x: ["a", "b"] }, { x: ["c", "d"] }] });
 
         const parseResult2 = schema.parse({ b: [{ x: [1, 2] }, { x: [3, 4] }] });
-        expect(parseResult2).toEqual({ b: [{ x: [1, 2] }, { x: [3, 4] }] });
+        expect(parseResult2).toStrictEqual({ b: [{ x: [1, 2] }, { x: [3, 4] }] });
 
         const x: { b: { x: (number | string)[] }[] } = parseResult1;
         const y: typeof parseResult1 = x;
@@ -101,11 +101,11 @@ describe("structural form schema", () => {
     it("returns strings, booleans, and default 'false' for Boolean leaf properties", () => {
         const schema = toPartialSchema(z.object({ b: z.boolean() }));
 
-        expect(schema.parse({ b: true })).toEqual({ b: true });
-        expect(schema.parse({ b: false })).toEqual({ b: false });
-        expect(schema.parse({ b: "test" })).toEqual({ b: "test" });
-        expect(schema.parse({ b: undefined })).toEqual({ b: false });
-        expect(schema.parse({})).toEqual({ b: false });
+        expect(schema.parse({ b: true })).toStrictEqual({ b: true });
+        expect(schema.parse({ b: false })).toStrictEqual({ b: false });
+        expect(schema.parse({ b: "test" })).toStrictEqual({ b: "test" });
+        expect(schema.parse({ b: undefined })).toStrictEqual({ b: false });
+        expect(schema.parse({})).toStrictEqual({ b: false });
 
         const x: { b: string | boolean } = schema.parse({ b: true });
         const y: ReturnType<typeof schema.parse> = x;
@@ -117,10 +117,10 @@ describe("structural form schema", () => {
         );
 
         const parseResult1 = schema.parse({ b: "a", d: "b" });
-        expect(parseResult1).toEqual({ b: "a", d: "b" });
+        expect(parseResult1).toStrictEqual({ b: "a", d: "b" });
 
         const parseResult2 = schema.parse({ b: 3, d: LocalDate.of(2023, 12, 1) });
-        expect(parseResult2).toEqual({ b: 3, d: LocalDate.of(2023, 12, 1) });
+        expect(parseResult2).toStrictEqual({ b: 3, d: LocalDate.of(2023, 12, 1) });
 
         const x: { b: number | string; d: LocalDate | string } = parseResult1;
         const y: typeof parseResult1 = x;
@@ -132,16 +132,16 @@ describe("structural form schema", () => {
         );
 
         const parseResult1 = schema.parse({ b: "a" });
-        expect(parseResult1).toEqual({ b: "a" });
+        expect(parseResult1).toStrictEqual({ b: "a" });
 
         const parseResult2 = schema.parse({ d: "b" });
-        expect(parseResult2).toEqual({ d: "b" });
+        expect(parseResult2).toStrictEqual({ d: "b" });
 
         const parseResult3 = schema.parse({ b: 3 });
-        expect(parseResult3).toEqual({ b: 3 });
+        expect(parseResult3).toStrictEqual({ b: 3 });
 
         const parseResult4 = schema.parse({ d: LocalDate.of(1999, 1, 9) });
-        expect(parseResult4).toEqual({ d: LocalDate.of(1999, 1, 9) });
+        expect(parseResult4).toStrictEqual({ d: LocalDate.of(1999, 1, 9) });
 
         const x: { b: number | string } | { d: LocalDate | string } = parseResult1;
         const y: typeof parseResult1 = x;
@@ -149,26 +149,24 @@ describe("structural form schema", () => {
 
     it("fails validation for array instead of object", () => {
         const schema = toPartialSchema(z.object({ b: z.object({ x: z.number() }) }));
-        expect(() => schema.parse({ b: ["1"] })).toThrowError("Expected object, received array");
+        expect(() => schema.parse({ b: ["1"] })).toThrow("Expected object, received array");
     });
 
     it("fails validation for object instead of array", () => {
         const schema = toPartialSchema(z.object({ b: z.number().array() }));
-        expect(() => schema.parse({ b: { x: "1" } })).toThrowError(
-            "Expected array, received object",
-        );
+        expect(() => schema.parse({ b: { x: "1" } })).toThrow("Expected array, received object");
     });
 
     it("fails validation for missing object", () => {
         const schema = toPartialSchema(z.object({ b: z.object({ x: z.number() }) }));
-        expect(() => schema.parse({ b: undefined })).toThrowError("Required");
-        expect(() => schema.parse({})).toThrowError("Required");
+        expect(() => schema.parse({ b: undefined })).toThrow("Required");
+        expect(() => schema.parse({})).toThrow("Required");
     });
 
     it("accepts missing optional object", () => {
         const schema = toPartialSchema(z.object({ b: z.object({ x: z.number() }).optional() }));
-        expect(schema.parse({ b: undefined })).toEqual({});
-        expect(schema.parse({})).toEqual({});
+        expect(schema.parse({ b: undefined })).toStrictEqual({ b: undefined });
+        expect(schema.parse({})).toStrictEqual({});
 
         const x: { b?: { x: string | number } } = schema.parse({});
         const y: ReturnType<typeof schema.parse> = x;
@@ -176,14 +174,14 @@ describe("structural form schema", () => {
 
     it("fails validation for missing array", () => {
         const schema = toPartialSchema(z.object({ b: z.number().array() }));
-        expect(() => schema.parse({ b: undefined })).toThrowError("Required");
-        expect(() => schema.parse({})).toThrowError("Required");
+        expect(() => schema.parse({ b: undefined })).toThrow("Required");
+        expect(() => schema.parse({})).toThrow("Required");
     });
 
     it("accepts missing optional array", () => {
         const schema = toPartialSchema(z.object({ b: z.number().array().optional() }));
-        expect(schema.parse({ b: undefined })).toEqual({});
-        expect(schema.parse({})).toEqual({});
+        expect(schema.parse({ b: undefined })).toStrictEqual({ b: undefined });
+        expect(schema.parse({})).toStrictEqual({});
 
         const x: { b?: (string | number)[] } = schema.parse({});
         const y: ReturnType<typeof schema.parse> = x;
@@ -199,10 +197,10 @@ describe("structural form schema", () => {
         );
 
         const parseResult1 = schema.parse({ b: "1", s: "test", a: ["true"] });
-        expect(parseResult1).toEqual({ b: "1", s: "test", a: ["true"] });
+        expect(parseResult1).toStrictEqual({ b: "1", s: "test", a: ["true"] });
 
         const parseResult = schema.parse({ b: 1, s: "test", a: [true] });
-        expect(parseResult).toEqual({ b: 1, s: "test", a: [true] });
+        expect(parseResult).toStrictEqual({ b: 1, s: "test", a: [true] });
     });
 
     it("ignores all failing refinements", () => {
@@ -220,10 +218,10 @@ describe("structural form schema", () => {
         );
 
         const parseResult1 = schema.parse({ b: "1", s: "test", a: ["true", "false"] });
-        expect(parseResult1).toEqual({ b: "1", s: "test", a: ["true", "false"] });
+        expect(parseResult1).toStrictEqual({ b: "1", s: "test", a: ["true", "false"] });
 
         const parseResult2 = schema.parse({ b: 1, s: "test", a: [true, false] });
-        expect(parseResult2).toEqual({ b: 1, s: "test", a: [true, false] });
+        expect(parseResult2).toStrictEqual({ b: 1, s: "test", a: [true, false] });
     });
 
     it("executes all successful preprocessors", () => {
@@ -232,10 +230,10 @@ describe("structural form schema", () => {
         );
 
         const parseResult1 = schema.parse({ b: "test" });
-        expect(parseResult1).toEqual({ b: -1 });
+        expect(parseResult1).toStrictEqual({ b: -1 });
 
         const parseResult2 = schema.parse({ b: [true, false] });
-        expect(parseResult2).toEqual({ b: 2 });
+        expect(parseResult2).toStrictEqual({ b: 2 });
 
         const x: { b: string | number } = schema.parse({});
         const y: ReturnType<typeof schema.parse> = x;
@@ -246,11 +244,11 @@ describe("structural form schema", () => {
         const schema2 = toPartialSchema(z.object({ b: z.preprocess(() => "", z.number()) }));
 
         const parseResult1 = schema1.parse({ b: "test" });
-        expect(parseResult1).toEqual({ b: "test" });
+        expect(parseResult1).toStrictEqual({ b: "test" });
 
         // Unclear: Is that the desired behavior?
         const parseResult2 = schema2.parse({ b: "test" });
-        expect(parseResult2).toEqual({ b: "" });
+        expect(parseResult2).toStrictEqual({ b: "" });
     });
 
     it("skips all synchronous transforms", () => {
@@ -266,7 +264,7 @@ describe("structural form schema", () => {
         );
 
         const parseResult = schema.parse({ a: [true, false] });
-        expect(parseResult).toEqual({ a: [true, false] });
+        expect(parseResult).toStrictEqual({ a: [true, false] });
     });
 
     it("skips all asynchronous transforms", async () => {
@@ -282,7 +280,7 @@ describe("structural form schema", () => {
         );
 
         const parseResult = await schema.parseAsync({ a: [true, false] });
-        expect(parseResult).toEqual({ a: [true, false] });
+        expect(parseResult).toStrictEqual({ a: [true, false] });
     });
 
     it("skips transforms for invalid data", () => {
@@ -301,7 +299,7 @@ describe("structural form schema", () => {
         );
 
         const parseResult = schema.parse({ s: "test", a: [true, false] });
-        expect(parseResult).toEqual({ s: "test", a: [true, false] });
+        expect(parseResult).toStrictEqual({ s: "test", a: [true, false] });
     });
 
     it("ignores async refinements", () => {
@@ -312,6 +310,6 @@ describe("structural form schema", () => {
         );
 
         const parseResult = schema.parse({ s: "test" });
-        expect(parseResult).toEqual({ s: "test" });
+        expect(parseResult).toStrictEqual({ s: "test" });
     });
 });

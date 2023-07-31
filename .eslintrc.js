@@ -16,7 +16,7 @@ module.exports = {
         "plugin:import/recommended",
         "plugin:import/typescript",
     ],
-    plugins: ["no-relative-import-paths", "import"],
+    plugins: ["no-relative-import-paths", "import", "jest"],
     settings: {
         "import/resolver": { typescript: { project: "./tsconfig.json" } },
     },
@@ -87,4 +87,21 @@ module.exports = {
         "no-unreachable-loop": "error",
         "valid-typeof": "error",
     },
+    overrides: [
+        {
+            files: ["source/**/*.test.ts", "source/**/*.test.tsx"],
+            plugins: ["jest"],
+            extends: ["plugin:jest/all"],
+            rules: {
+                "jest/max-expects": "off",
+                "jest/no-conditional-in-test": "off",
+                "jest/no-standalone-expect": "off",
+                "jest/no-test-return-statement": "off",
+                "jest/prefer-expect-assertions": "off",
+                "jest/prefer-expect-resolves": "off",
+                "jest/require-hook": "off",
+                "jest/require-to-throw-message": "off",
+            },
+        },
+    ],
 };

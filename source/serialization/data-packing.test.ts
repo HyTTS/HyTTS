@@ -5,16 +5,16 @@ import { zLocalDate } from "@/serialization/date-time";
 
 describe("data packing", () => {
     it("handles `undefined`", () => {
-        expect(pack(undefined)).toBe(undefined);
+        expect(pack(undefined)).toBeUndefined();
         // eslint bug, this is actually *NOT* a void expression
         // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
-        expect(unpack(z.undefined(), undefined)).toBe(undefined);
+        expect(unpack(z.undefined(), undefined)).toBeUndefined();
         expect(() => unpack(z.undefined(), "test")).toThrow("Expected undefined, received string");
     });
 
     it("handles `null`", () => {
-        expect(pack(null)).toBe(null);
-        expect(unpack(z.null(), null)).toBe(null);
+        expect(pack(null)).toBeNull();
+        expect(unpack(z.null(), null)).toBeNull();
         expect(() => unpack(z.null(), "test")).toThrow("Expected null, received string");
     });
 
@@ -65,7 +65,7 @@ describe("data packing", () => {
     it("handles `Date`", () => {
         const date = new Date();
         expect(pack(date)).toBe(date.toISOString());
-        expect(unpack(z.date(), date.toISOString())).toEqual(date);
+        expect(unpack(z.date(), date.toISOString())).toStrictEqual(date);
     });
 
     it("handles custom schema", () => {
@@ -84,8 +84,10 @@ describe("data packing", () => {
     });
 
     it("handles plain objects", () => {
-        expect(pack({ a: 1, b: "", c: null })).toEqual({ a: "1", b: "", c: null });
-        expect(pack({ a: { b: { c: 1 }, d: true } })).toEqual({ a: { b: { c: "1" }, d: "true" } });
+        expect(pack({ a: 1, b: "", c: null })).toStrictEqual({ a: "1", b: "", c: null });
+        expect(pack({ a: { b: { c: 1 }, d: true } })).toStrictEqual({
+            a: { b: { c: "1" }, d: "true" },
+        });
 
         expect(
             unpack(z.object({ a: z.number(), b: z.string(), c: z.null() }), {
@@ -93,29 +95,29 @@ describe("data packing", () => {
                 b: "",
                 c: null,
             }),
-        ).toEqual({ a: 1, b: "", c: null });
+        ).toStrictEqual({ a: 1, b: "", c: null });
 
         expect(
             unpack(z.object({ a: z.object({ b: z.object({ c: z.number() }), d: z.boolean() }) }), {
                 a: { b: { c: "1" }, d: "true" },
             }),
-        ).toEqual({ a: { b: { c: 1 }, d: true } });
+        ).toStrictEqual({ a: { b: { c: 1 }, d: true } });
 
         expect(() => unpack(z.object({}), "test")).toThrow("Data is not an object.");
     });
 
     it("handles intersections", () => {
         const schema = z.object({ a: z.number() }).and(z.object({ b: z.string(), c: z.null() }));
-        expect(unpack(schema, { a: "1", b: "", c: null })).toEqual({ a: 1, b: "", c: null });
+        expect(unpack(schema, { a: "1", b: "", c: null })).toStrictEqual({ a: 1, b: "", c: null });
         expect(() => unpack(schema, { a: "1" })).toThrow("Required");
         expect(() => unpack(schema, { b: "1", c: null })).toThrow("Required");
     });
 
     it("handles objects with custom `toString()`", () => {
         const now = LocalDate.now();
-        expect(pack(now)).toEqual(now.toString());
+        expect(pack(now)).toStrictEqual(now.toString());
 
-        expect(unpack(zLocalDate(), now.toString())).toEqual(now);
+        expect(unpack(zLocalDate(), now.toString())).toStrictEqual(now);
         expect(() => unpack(zLocalDate(), "test")).toThrow("Not a local date");
     });
 
@@ -127,33 +129,36 @@ describe("data packing", () => {
     });
 
     it("handles arrays", () => {
-        expect(pack([1, 2, 3])).toEqual(["1", "2", "3"]);
-        expect(pack([false, true])).toEqual(["false", "true"]);
-        expect(unpack(z.number().array(), ["1", "2", "3"])).toEqual([1, 2, 3]);
-        expect(unpack(z.boolean().array(), ["false", "true"])).toEqual([false, true]);
+        expect(pack([1, 2, 3])).toStrictEqual(["1", "2", "3"]);
+        expect(pack([false, true])).toStrictEqual(["false", "true"]);
+        expect(unpack(z.number().array(), ["1", "2", "3"])).toStrictEqual([1, 2, 3]);
+        expect(unpack(z.boolean().array(), ["false", "true"])).toStrictEqual([false, true]);
 
-        expect(pack([[1, 2], [3]])).toEqual([["1", "2"], ["3"]]);
-        expect(unpack(z.number().array().array(), [["1", "2"], ["3"]])).toEqual([[1, 2], [3]]);
+        expect(pack([[1, 2], [3]])).toStrictEqual([["1", "2"], ["3"]]);
+        expect(unpack(z.number().array().array(), [["1", "2"], ["3"]])).toStrictEqual([
+            [1, 2],
+            [3],
+        ]);
 
         expect(() => unpack(z.string().array(), "test")).toThrow("Data is not an array.");
     });
 
     it("handles nested arrays and objects arrays", () => {
-        expect(pack([{ a: [1, 2] }])).toEqual([{ a: ["1", "2"] }]);
-        expect(unpack(z.object({ a: z.number().array() }).array(), [{ a: ["1", "2"] }])).toEqual([
-            { a: [1, 2] },
-        ]);
+        expect(pack([{ a: [1, 2] }])).toStrictEqual([{ a: ["1", "2"] }]);
+        expect(
+            unpack(z.object({ a: z.number().array() }).array(), [{ a: ["1", "2"] }]),
+        ).toStrictEqual([{ a: [1, 2] }]);
     });
 
     it("unpacks despite `nullable` schema", () => {
         expect(unpack(z.number().nullable(), "1")).toBe(1);
-        expect(unpack(z.number().nullable(), null)).toBe(null);
+        expect(unpack(z.number().nullable(), null)).toBeNull();
     });
 
     it("unpacks despite `nullish` schema", () => {
         expect(unpack(z.number().nullish(), "1")).toBe(1);
-        expect(unpack(z.number().nullish(), null)).toBe(null);
-        expect(unpack(z.number().nullish(), undefined)).toBe(undefined);
+        expect(unpack(z.number().nullish(), null)).toBeNull();
+        expect(unpack(z.number().nullish(), undefined)).toBeUndefined();
     });
 
     it("unpacks despite `default`` schema", () => {
@@ -220,6 +225,6 @@ describe("data packing", () => {
     });
 
     it("handles js-joda types", () => {
-        expect(unpack(zLocalDate(), "2023-05-01")).toEqual(LocalDate.of(2023, 5, 1));
+        expect(unpack(zLocalDate(), "2023-05-01")).toStrictEqual(LocalDate.of(2023, 5, 1));
     });
 });
