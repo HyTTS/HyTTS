@@ -3,7 +3,7 @@
 
 // See also https://www.typescriptlang.org/docs/handbook/jsx.html
 
-import type { BrowserFunc } from "./browser-script";
+import type { BrowserFunc } from "@/jsx/browser-script";
 
 /** The types that are supported as children of a JSX expression. */
 export type JsxNode = JsxElement | string | number | boolean | null | undefined | JsxNode[];

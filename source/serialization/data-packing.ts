@@ -1,8 +1,4 @@
 import mapValues from "lodash/mapValues";
-import type {
-    ZodType,
-    ZodTypeAny,
-    ZodTypeDef} from "zod";
 import {
     ZodAny,
     ZodArray,
@@ -24,6 +20,10 @@ import {
     ZodUnknown,
     z,
 } from "zod";
+import type {
+    ZodType,
+    ZodTypeAny,
+    ZodTypeDef} from "zod";
 
 export type PackedData = undefined | null | string | { [key: string]: PackedData } | PackedData[];
 

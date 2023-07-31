@@ -1,2 +1,2 @@
-import { log } from "./source/log";
+import { log } from "@/log";
 log.error = log.warn = log.info = () => {};

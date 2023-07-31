@@ -1,7 +1,7 @@
-import { pack, unpack } from "@/serialization/data-packing";
-import { zLocalDate } from "@/serialization/date-time";
 import { LocalDate } from "@js-joda/core";
 import { z } from "zod";
+import { pack, unpack } from "@/serialization/data-packing";
+import { zLocalDate } from "@/serialization/date-time";
 
 describe("data packing", () => {
     it("handles `undefined`", () => {

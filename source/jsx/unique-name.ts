@@ -1,4 +1,4 @@
-import { useContext, createContext } from "@/jsx/context";
+import { createContext, useContext } from "@/jsx/context";
 import type { PropsWithChildren } from "@/jsx/jsx-types";
 
 const uniqueNameContext = createContext<{ readonly prefix: string; index: number }>({

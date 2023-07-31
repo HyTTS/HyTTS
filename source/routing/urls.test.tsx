@@ -1,7 +1,7 @@
-import { Redirect } from "@/http/http-context";
-import { route, action } from "@/routing/routing";
-import { createUrls } from "@/routing/urls";
 import { z } from "zod";
+import { Redirect } from "@/http/http-context";
+import { action, route } from "@/routing/routing";
+import { createUrls } from "@/routing/urls";
 
 describe("urls", () => {
     it("supports routing definitions without any params", () => {

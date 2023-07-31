@@ -1,9 +1,9 @@
-import each from "jest-each";
 import { LocalDate } from "@js-joda/core";
-import type { ZodType, ZodTypeDef } from "zod";
+import each from "jest-each";
 import { z } from "zod";
-import { parseUrlSearchParams, toUrlSearchParams } from "./url-params";
 import { zLocalDate } from "@/serialization/date-time";
+import { parseUrlSearchParams, toUrlSearchParams } from "@/serialization/url-params";
+import type { ZodType, ZodTypeDef } from "zod";
 
 describe("URL search params", () => {
     function roundtrip<T extends Record<string, unknown>, Def extends ZodTypeDef, I>(

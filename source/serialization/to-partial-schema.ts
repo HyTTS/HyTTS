@@ -1,26 +1,23 @@
-import type {
-    ZodRawShape} from "zod";
+import mapValues from "lodash/mapValues";
 import {
-    type ZodType,
-    type ZodTypeAny,
-    ZodString,
-    ZodUndefined,
-    ZodNull,
-    ZodNumber,
-    ZodBoolean,
-    ZodEnum,
-    ZodObject,
-    ZodOptional,
+    ZodAny,
     ZodArray,
-    ZodNullable,
+    ZodBoolean,
     ZodDefault,
     ZodEffects,
+    ZodEnum,
     ZodIntersection,
+    ZodNull,
+    ZodNullable,
+    ZodNumber,
+    ZodObject,
+    ZodOptional,
+    ZodString,
+    ZodUndefined,
     ZodUnion,
     z,
-    ZodAny
 } from "zod";
-import mapValues from "lodash/mapValues";
+import type { ZodRawShape, ZodType, ZodTypeAny } from "zod";
 
 /**
  * Transforms the given input schema into a partial one. A partial schema enforces the structure of

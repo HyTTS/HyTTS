@@ -1,7 +1,7 @@
 import { BrowserScriptRenderer } from "@/jsx/browser-script";
 import { createContext, useContext } from "@/jsx/context";
-import type { JsxComponent, PropsWithChildren } from "@/jsx/jsx-types";
 import { UniqueNameProvider } from "@/jsx/unique-name";
+import type { JsxComponent, PropsWithChildren } from "@/jsx/jsx-types";
 
 /**
  * A frame is a regular JSX component that can be rendered anywhere within the component tree

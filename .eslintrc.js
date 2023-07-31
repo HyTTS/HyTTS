@@ -13,19 +13,16 @@ module.exports = {
         "eslint:recommended",
         "plugin:@typescript-eslint/strict-type-checked",
         "plugin:@typescript-eslint/stylistic-type-checked",
+        "plugin:import/recommended",
+        "plugin:import/typescript",
     ],
-    plugins: ["no-relative-import-paths"],
+    plugins: ["no-relative-import-paths", "import"],
+    settings: {
+        "import/resolver": { typescript: { project: "./tsconfig.json" } },
+    },
     rules: {
         "@typescript-eslint/ban-ts-comment": "off",
-        "@typescript-eslint/ban-types": [
-            "error",
-            {
-                types: {
-                    extendDefaults: true,
-                    "{}": false,
-                },
-            },
-        ],
+        "@typescript-eslint/ban-types": ["error", { types: { extendDefaults: true, "{}": false } }],
         "@typescript-eslint/consistent-type-definitions": ["error", "type"],
         "@typescript-eslint/consistent-type-imports": "error",
         "@typescript-eslint/no-empty-function": "off",
@@ -53,7 +50,25 @@ module.exports = {
             },
         ],
         "@typescript-eslint/no-var-requires": "off",
+        "dot-notation": "error",
         eqeqeq: ["error", "always"],
+        "import/order": [
+            "error",
+            {
+                groups: [
+                    "builtin",
+                    "external",
+                    "internal",
+                    "parent",
+                    "sibling",
+                    "index",
+                    "object",
+                    "type",
+                ],
+                "newlines-between": "never",
+                alphabetize: { order: "asc", caseInsensitive: true },
+            },
+        ],
         "no-console": "error",
         "no-constructor-return": "error",
         "no-extra-bind": "error",
@@ -61,7 +76,10 @@ module.exports = {
         "no-new-wrappers": "error",
         "no-restricted-imports": [
             "error",
-            { paths: [{ name: "@/index", message: "Import from the actual path instead." }] },
+            {
+                paths: [{ name: "@/index", message: "Import from the actual path instead." }],
+                patterns: [".*"],
+            },
         ],
         "no-relative-import-paths/no-relative-import-paths": ["warn", { allowSameFolder: true }],
         "no-self-compare": "error",

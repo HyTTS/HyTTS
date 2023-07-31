@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-import { toPartialSchema } from "@/serialization/to-partial-schema";
-import { zLocalDate } from "@/serialization/date-time";
 import { LocalDate } from "@js-joda/core";
 import { z } from "zod";
+import { zLocalDate } from "@/serialization/date-time";
+import { toPartialSchema } from "@/serialization/to-partial-schema";
 
 describe("structural form schema", () => {
     it("accepts `null` and `undefined`", () => {

@@ -1,5 +1,5 @@
-import type { FrameMetadata} from "@/dom/frame";
 import { useFrameMetadata } from "@/dom/frame";
+import type { FrameMetadata} from "@/dom/frame";
 import type { JSX } from "@/jsx/jsx-runtime";
 import type { ActionUrl, RouteUrl } from "@/routing/urls";
 

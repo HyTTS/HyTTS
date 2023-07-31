@@ -1,14 +1,14 @@
-import { createServer } from "http";
-import type { AddressInfo } from "net";
-import type { Express } from "express";
-import express from "express";
-import type { Server } from "http";
+import { createServer } from "node:http";
+import express, { text } from "express";
+import { createRenderCallback } from "@/http/render-callback";
 import { toExpressRouter } from "@/routing/express-router";
-import type { RoutingDefinition } from "@/routing/routing";
-import type { Urls, RouteUrl, ActionUrl} from "@/routing/urls";
 import { createUrls } from "@/routing/urls";
-import { createRenderCallback } from "./http/render-callback";
 import type { JsxComponent, PropsWithChildren } from "@/jsx/jsx-types";
+import type { RoutingDefinition } from "@/routing/routing";
+import type { ActionUrl, RouteUrl, Urls } from "@/routing/urls";
+import type { Express } from "express";
+import type { Server } from "node:http";
+import type { AddressInfo } from "node:net";
 
 type UseAppCallback<TReturn = void> = (
     fetch: (url: string, init?: RequestInit) => Promise<Response>,
@@ -67,7 +67,7 @@ export function runTestApp<T extends RoutingDefinition>(
 
     const app = express();
     app.set("query parser", (queryString: string) => queryString);
-    app.use(express.text({ type: "application/x-www-form-urlencoded" }));
+    app.use(text({ type: "application/x-www-form-urlencoded" }));
     app.use(toExpressRouter(routes, renderCallback));
 
     return testApp(app, (fetch) =>

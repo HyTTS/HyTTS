@@ -1,4 +1,3 @@
-import { interceptClicks, interceptHistoryChanges } from "@/browser/navigation.browser";
 import {
     executeAction,
     loadRoute,
@@ -6,6 +5,7 @@ import {
     navigateToRoute,
     updateFrame,
 } from "@/browser/frame.browser";
+import { interceptClicks, interceptHistoryChanges } from "@/browser/navigation.browser";
 
 interceptClicks();
 interceptHistoryChanges();

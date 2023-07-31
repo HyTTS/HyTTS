@@ -1,11 +1,11 @@
 import { Redirect, useHttpStatusCode, useResponseHeader } from "@/http/http-context";
-import type { RenderOptions} from "@/http/render-callback";
 import { createRenderCallback } from "@/http/render-callback";
+import { createContext, useContext } from "@/jsx/context";
 import { createRouteFilter } from "@/routing/route-filters";
 import { route } from "@/routing/routing";
-import type { Response } from "express";
 import { createUrls } from "@/routing/urls";
-import { createContext, useContext } from "@/jsx/context";
+import type { RenderOptions} from "@/http/render-callback";
+import type { Response } from "express";
 
 describe("renderer", () => {
     it("renders a working component in a document", async () => {
