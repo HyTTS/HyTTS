@@ -4,7 +4,7 @@ import { createContext, useContext } from "@/jsx/context";
 import { createRouteFilter } from "@/routing/route-filters";
 import { route } from "@/routing/routing";
 import { createUrls } from "@/routing/urls";
-import type { RenderOptions} from "@/http/render-callback";
+import type { RenderOptions } from "@/http/render-callback";
 import type { Response } from "express";
 
 describe("renderer", () => {

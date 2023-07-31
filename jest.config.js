@@ -1,10 +1,9 @@
-/* eslint-disable no-undef */
-
 /*
  * For a detailed explanation regarding each configuration property, visit:
  * https://jestjs.io/docs/en/configuration.html
  */
 
+/** @type {import('jest').Config} */
 module.exports = {
     moduleNameMapper: { "@/(.*)": "<rootDir>/source/$1" },
     roots: ["./source"],

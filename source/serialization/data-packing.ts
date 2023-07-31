@@ -20,10 +20,7 @@ import {
     ZodUnknown,
     z,
 } from "zod";
-import type {
-    ZodType,
-    ZodTypeAny,
-    ZodTypeDef} from "zod";
+import type { ZodType, ZodTypeAny, ZodTypeDef } from "zod";
 
 export type PackedData = undefined | null | string | { [key: string]: PackedData } | PackedData[];
 
