@@ -1,6 +1,7 @@
-import { FrameMetadata, useFrameMetadata } from "@/dom/frame";
-import { JSX } from "@/jsx/jsx-runtime";
-import { ActionUrl, RouteUrl } from "@/routing/urls";
+import type { FrameMetadata} from "@/dom/frame";
+import { useFrameMetadata } from "@/dom/frame";
+import type { JSX } from "@/jsx/jsx-runtime";
+import type { ActionUrl, RouteUrl } from "@/routing/urls";
 
 export type RouteLinkProps = {
     /**

@@ -1,9 +1,9 @@
 import { createContext, useContext } from "@/jsx/context";
-import { JsxElement, PropsWithChildren } from "@/jsx/jsx-types";
-import { RouteUrl } from "@/routing/urls";
+import type { JsxElement, PropsWithChildren } from "@/jsx/jsx-types";
+import type { RouteUrl } from "@/routing/urls";
 import { parseUrlSearchParams } from "@/serialization/url-params";
-import { Request, Response } from "express";
-import { ZodType, ZodTypeDef } from "zod";
+import type { Request, Response } from "express";
+import type { ZodType, ZodTypeDef } from "zod";
 
 const httpContext = createContext<Response>({ name: "http context" });
 

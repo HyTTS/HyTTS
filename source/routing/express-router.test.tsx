@@ -1,4 +1,5 @@
-import { route, action, Route } from "@/routing/routing";
+import type { Route } from "@/routing/routing";
+import { route, action } from "@/routing/routing";
 import { zLocalDate } from "@/serialization/date-time";
 import { LocalDate } from "@js-joda/core";
 import { z } from "zod";

@@ -1,6 +1,7 @@
 import each from "jest-each";
 import { LocalDate } from "@js-joda/core";
-import { z, ZodType, ZodTypeDef } from "zod";
+import type { ZodType, ZodTypeDef } from "zod";
+import { z } from "zod";
 import { parseUrlSearchParams, toUrlSearchParams } from "./url-params";
 import { zLocalDate } from "@/serialization/date-time";
 

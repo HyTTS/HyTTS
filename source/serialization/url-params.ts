@@ -1,4 +1,5 @@
-import { ZodDefault, ZodOptional, ZodType, ZodTypeDef } from "zod";
+import type { ZodType, ZodTypeDef } from "zod";
+import { ZodDefault, ZodOptional } from "zod";
 import { stringify, parse } from "qs";
 import { unpack, pack } from "@/serialization/data-packing";
 

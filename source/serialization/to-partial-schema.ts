@@ -1,3 +1,5 @@
+import type {
+    ZodRawShape} from "zod";
 import {
     type ZodType,
     type ZodTypeAny,
@@ -16,8 +18,7 @@ import {
     ZodIntersection,
     ZodUnion,
     z,
-    ZodAny,
-    ZodRawShape,
+    ZodAny
 } from "zod";
 import mapValues from "lodash/mapValues";
 

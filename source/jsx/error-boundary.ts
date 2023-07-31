@@ -1,5 +1,6 @@
 import { renderChildren } from "@/jsx/render-children";
-import { PropsWithChildren, JsxComponent, toJsxExpression, JsxElement } from "@/jsx/jsx-types";
+import type { PropsWithChildren, JsxComponent, JsxElement } from "@/jsx/jsx-types";
+import { toJsxExpression } from "@/jsx/jsx-types";
 
 export type ErrorViewProps = {
     /** The error that occurred and that should be shown. */

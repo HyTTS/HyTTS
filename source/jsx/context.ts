@@ -1,5 +1,6 @@
 import { renderChildren } from "@/jsx/render-children";
-import { PropsWithChildren, JsxComponent, toJsxExpression } from "@/jsx/jsx-types";
+import type { PropsWithChildren, JsxComponent} from "@/jsx/jsx-types";
+import { toJsxExpression } from "@/jsx/jsx-types";
 import { AsyncLocalStorage } from "node:async_hooks";
 
 const contextStorage = new AsyncLocalStorage<Record<symbol, unknown>>();

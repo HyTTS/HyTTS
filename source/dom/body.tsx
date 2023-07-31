@@ -1,6 +1,7 @@
-import { FrameMetadata, frameContext } from "@/dom/frame";
+import type { FrameMetadata} from "@/dom/frame";
+import { frameContext } from "@/dom/frame";
 import { BrowserScriptRenderer } from "@/jsx/browser-script";
-import { JSX } from "@/jsx/jsx-types";
+import type { JSX } from "@/jsx/jsx-types";
 import { useUniqueName } from "@/jsx/unique-name";
 
 export type BodyProps = JSX.HTMLAttributes<HTMLBodyElement>;

@@ -2,11 +2,12 @@ import { isBrowserFunc, useRegisterBrowserEventHandler } from "@/jsx/browser-scr
 import { renderChildren } from "@/jsx/render-children";
 import { escapeString } from "@/jsx/escape-string";
 import { useUniqueName } from "@/jsx/unique-name";
-import {
+import type {
     JsxComponent,
     JsxElement,
     JsxExpression,
-    PropsWithChildren,
+    PropsWithChildren} from "@/jsx/jsx-types";
+import {
     toJsxExpression,
 } from "@/jsx/jsx-types";
 

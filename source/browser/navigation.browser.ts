@@ -1,6 +1,7 @@
 import { executeAction } from "@/browser/frame.browser";
 import { navigateToAction } from "@/browser/frame.browser";
-import { FrameSelector, loadRoute, navigateToRoute } from "@/browser/frame.browser";
+import type { FrameSelector} from "@/browser/frame.browser";
+import { loadRoute, navigateToRoute } from "@/browser/frame.browser";
 
 /**
  * Specifies a set of attributes that control the behavior of `interceptClicks` for both routes and actions.

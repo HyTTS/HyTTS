@@ -1,6 +1,6 @@
 import { BrowserScriptRenderer } from "@/jsx/browser-script";
 import { createContext, useContext } from "@/jsx/context";
-import { JsxComponent, PropsWithChildren } from "@/jsx/jsx-types";
+import type { JsxComponent, PropsWithChildren } from "@/jsx/jsx-types";
 import { UniqueNameProvider } from "@/jsx/unique-name";
 
 /**

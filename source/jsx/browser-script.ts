@@ -1,6 +1,7 @@
 import { renderChildren } from "@/jsx/render-children";
 import { createContext, useContext } from "@/jsx/context";
-import { EventArgs, EventHandler, PropsWithChildren, toJsxExpression } from "@/jsx/jsx-types";
+import type { EventArgs, EventHandler, PropsWithChildren} from "@/jsx/jsx-types";
+import { toJsxExpression } from "@/jsx/jsx-types";
 import { useCspNonce } from "@/jsx/csp-nonce";
 
 const browserScriptSymbol = Symbol();

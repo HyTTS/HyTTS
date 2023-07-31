@@ -1,4 +1,7 @@
 {
     "typescript.tsdk": "node_modules/typescript/lib",
     "typescript.preferences.importModuleSpecifier": "non-relative",
+    "[typescript]": { "editor.codeActionsOnSave": ["source.fixAll.eslint"] },
+    "[typescriptreact]": { "editor.codeActionsOnSave": ["source.fixAll.eslint"] },
+    "[json]": { "editor.defaultFormatter": "esbenp.prettier-vscode" }
 }

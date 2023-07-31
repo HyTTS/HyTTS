@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-import { RoutingDefinition, action, route } from "@/routing/routing";
+import type { RoutingDefinition} from "@/routing/routing";
+import { action, route } from "@/routing/routing";
 import { z } from "zod";
 
 describe("routing", () => {

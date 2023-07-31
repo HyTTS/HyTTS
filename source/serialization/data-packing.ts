@@ -1,4 +1,8 @@
 import mapValues from "lodash/mapValues";
+import type {
+    ZodType,
+    ZodTypeAny,
+    ZodTypeDef} from "zod";
 import {
     ZodAny,
     ZodArray,
@@ -15,9 +19,6 @@ import {
     ZodObject,
     ZodOptional,
     ZodString,
-    ZodType,
-    ZodTypeAny,
-    ZodTypeDef,
     ZodUndefined,
     ZodUnion,
     ZodUnknown,

@@ -1,5 +1,6 @@
 import { escapeString } from "@/jsx/escape-string";
-import { isJsxExpression, JsxExpression } from "@/jsx/jsx-types";
+import type { JsxExpression } from "@/jsx/jsx-types";
+import { isJsxExpression } from "@/jsx/jsx-types";
 
 export function renderChildren(
     children: unknown,

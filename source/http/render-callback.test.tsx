@@ -1,8 +1,9 @@
 import { Redirect, useHttpStatusCode, useResponseHeader } from "@/http/http-context";
-import { RenderOptions, createRenderCallback } from "@/http/render-callback";
+import type { RenderOptions} from "@/http/render-callback";
+import { createRenderCallback } from "@/http/render-callback";
 import { createRouteFilter } from "@/routing/route-filters";
 import { route } from "@/routing/routing";
-import { Response } from "express";
+import type { Response } from "express";
 import { createUrls } from "@/routing/urls";
 import { createContext, useContext } from "@/jsx/context";
 
