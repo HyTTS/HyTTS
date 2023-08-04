@@ -1,6 +1,6 @@
-import { toUrlSearchParams } from "@/serialization/url-params";
-import type { Action, LazyRoutingDefinition, Route, RoutingDefinition } from "@/routing/routing";
 import type { z } from "zod";
+import type { Action, LazyRoutingDefinition, Route, RoutingDefinition } from "@/routing/routing";
+import { toUrlSearchParams } from "@/serialization/url-params";
 
 const routeUrlSymbol = Symbol();
 const actionUrlSymbol = Symbol();

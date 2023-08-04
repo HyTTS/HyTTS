@@ -1,5 +1,6 @@
 import mapValues from "lodash/mapValues";
 import {
+    z,
     ZodAny,
     ZodArray,
     ZodBoolean,
@@ -12,12 +13,13 @@ import {
     ZodNumber,
     ZodObject,
     ZodOptional,
+    type ZodRawShape,
     ZodString,
+    type ZodType,
+    type ZodTypeAny,
     ZodUndefined,
     ZodUnion,
-    z,
 } from "zod";
-import type { ZodRawShape, ZodType, ZodTypeAny } from "zod";
 
 /**
  * Transforms the given input schema into a partial one. A partial schema enforces the structure of

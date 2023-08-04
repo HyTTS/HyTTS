@@ -46,8 +46,7 @@ in the general case.
 
 */
 
-import { z } from "zod";
-import type { ZodFirstPartyTypeKind } from "zod";
+import { z, type ZodFirstPartyTypeKind } from "zod";
 
 // This is only used to get notified about new first-party Zod types when Zod is updated.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

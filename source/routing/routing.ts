@@ -1,6 +1,6 @@
+import type { z, ZodType, ZodTypeDef } from "zod";
 import type { JsxComponent } from "@/jsx/jsx-types";
 import type { RouteFilters } from "@/routing/route-filters";
-import type { ZodType, ZodTypeDef, z } from "zod";
 
 const routingSymbol = Symbol();
 

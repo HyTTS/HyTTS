@@ -1,7 +1,6 @@
 import { parse, stringify } from "qs";
-import { ZodDefault, ZodOptional } from "zod";
+import { ZodDefault, ZodOptional, type ZodType, type ZodTypeDef } from "zod";
 import { pack, unpack } from "@/serialization/data-packing";
-import type { ZodType, ZodTypeDef } from "zod";
 
 /**
  * Parses the given URL search params using the given Zod schema. The schema must be an object schema,

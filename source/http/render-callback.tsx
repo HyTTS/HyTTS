@@ -1,13 +1,12 @@
 import { randomBytes } from "node:crypto";
+import type { Response } from "express";
 import { HttpContextProvider, useHttpStatusCode } from "@/http/http-context";
 import { CspNonceProvider } from "@/jsx/csp-nonce";
-import { ErrorBoundary } from "@/jsx/error-boundary";
+import { ErrorBoundary, type ErrorViewProps } from "@/jsx/error-boundary";
 import { renderToString } from "@/jsx/jsx-runtime";
-import { UniqueNameProvider } from "@/jsx/unique-name";
-import type { ErrorViewProps } from "@/jsx/error-boundary";
 import type { JsxComponent, PropsWithChildren } from "@/jsx/jsx-types";
+import { UniqueNameProvider } from "@/jsx/unique-name";
 import type { RouteFilters } from "@/routing/route-filters";
-import type { Response } from "express";
 
 export type RenderCallback = ReturnType<typeof createRenderCallback>;
 

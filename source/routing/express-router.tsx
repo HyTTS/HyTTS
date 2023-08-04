@@ -1,19 +1,19 @@
 import { Router } from "express";
 import { getRequestBody, getSearchParams } from "@/http/http-context";
+import type { RenderCallback } from "@/http/render-callback";
 import { log } from "@/log";
 import {
     type Action,
+    isAction,
+    isRoute,
     type ObjectSchema,
     type ParamsSchema,
     type Route,
     type RoutingDefinition,
-    isAction,
-    isRoute,
 } from "@/routing/routing";
 import { joinPaths } from "@/routing/urls";
 import { unpack } from "@/serialization/data-packing";
 import { parseUrlSearchParams } from "@/serialization/url-params";
-import type { RenderCallback } from "@/http/render-callback";
 
 /**
  * Creates an Express-based router for the given `routingDefinition`. The returned `Router` can then

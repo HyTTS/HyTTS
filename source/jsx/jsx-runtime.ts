@@ -1,9 +1,14 @@
 import { isBrowserFunc, useRegisterBrowserEventHandler } from "@/jsx/browser-script";
 import { escapeString } from "@/jsx/escape-string";
-import { toJsxExpression } from "@/jsx/jsx-types";
+import {
+    type JsxComponent,
+    type JsxElement,
+    type JsxExpression,
+    type PropsWithChildren,
+    toJsxExpression,
+} from "@/jsx/jsx-types";
 import { renderChildren } from "@/jsx/render-children";
 import { useUniqueName } from "@/jsx/unique-name";
-import type { JsxComponent, JsxElement, JsxExpression, PropsWithChildren } from "@/jsx/jsx-types";
 
 // This export is required so that type checking works for JSX expressions without polluting the global namespace,
 // thus making it possible to use multiple JSX implementations in the same code base.

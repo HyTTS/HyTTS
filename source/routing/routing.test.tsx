@@ -2,8 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { z } from "zod";
-import { action, route } from "@/routing/routing";
-import type { RoutingDefinition } from "@/routing/routing";
+import { action, route, type RoutingDefinition } from "@/routing/routing";
 
 describe("routing", () => {
     it("does not pass params to handler when none are specified", () => {

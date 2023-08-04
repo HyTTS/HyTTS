@@ -1,10 +1,9 @@
 import { LocalDate } from "@js-joda/core";
 import { z } from "zod";
 import { createContext, useContext } from "@/jsx/context";
-import { action, route } from "@/routing/routing";
+import { action, route, type Route } from "@/routing/routing";
 import { zLocalDate } from "@/serialization/date-time";
 import { runTestApp } from "@/test-helpers";
-import type { Route } from "@/routing/routing";
 
 describe("express-router", () => {
     it("supports routing definitions without any params", () =>

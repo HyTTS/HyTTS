@@ -6,11 +6,9 @@ import {
     useResponseHeader,
     useUrlSearchParams,
 } from "@/http/http-context";
-import { route } from "@/routing/routing";
-import { createUrls } from "@/routing/urls";
+import { route, type RoutingDefinition } from "@/routing/routing";
+import { createUrls, type RouteUrl } from "@/routing/urls";
 import { runTestApp } from "@/test-helpers";
-import type { RoutingDefinition } from "@/routing/routing";
-import type { RouteUrl } from "@/routing/urls";
 
 describe("http-context", () => {
     it("supports an HTTP redirect to a route", () =>
