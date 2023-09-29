@@ -106,6 +106,16 @@ describe("data packing", () => {
         expect(() => unpack(z.object({}), "test")).toThrow("Data is not an object.");
     });
 
+    it("handles readonly objects", () => {
+        expect(
+            unpack(z.object({ a: z.number(), b: z.string(), c: z.null() }).readonly(), {
+                a: "1",
+                b: "",
+                c: null,
+            }),
+        ).toStrictEqual({ a: 1, b: "", c: null });
+    });
+
     it("handles intersections", () => {
         const schema = z.object({ a: z.number() }).and(z.object({ b: z.string(), c: z.null() }));
         expect(unpack(schema, { a: "1", b: "", c: null })).toStrictEqual({ a: 1, b: "", c: null });

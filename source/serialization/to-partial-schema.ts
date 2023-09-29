@@ -14,6 +14,7 @@ import {
     ZodObject,
     ZodOptional,
     type ZodRawShape,
+    ZodReadonly,
     ZodString,
     type ZodType,
     type ZodTypeAny,
@@ -106,6 +107,8 @@ export function toPartialSchema<T extends ZodTypeAny>(schema: T): ToPartialSchem
             return recurse(schema._def.left).and(recurse(schema._def.right));
         } else if (schema instanceof ZodUnion) {
             return z.union(schema.options.map(recurse));
+        } else if (schema instanceof ZodReadonly) {
+            return schema._def.innerType.readonly();
         } else if (schema instanceof ZodAny) {
             return schema;
         } else {
@@ -132,6 +135,8 @@ export type ToPartialSchema<T extends ZodTypeAny> = T extends ZodObject<
     ? ZodOptional<ToPartialSchema<U>>
     : T extends ZodIntersection<infer U, infer V>
     ? ZodIntersection<ToPartialSchema<U>, ToPartialSchema<V>>
+    : T extends ZodReadonly<infer I>
+    ? ZodReadonly<ToPartialSchema<I>>
     : T extends ZodUnion<infer U>
     ? ZodUnion<ConvertUnionCases<U>>
     : ZodUnion<[T, ZodString]>;

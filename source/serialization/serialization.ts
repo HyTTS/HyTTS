@@ -67,6 +67,7 @@ const supporedFirstPartyTypes: Record<ZodFirstPartyTypeKind, boolean> = {
     [z.ZodFirstPartyTypeKind.ZodNullable]: true,
     [z.ZodFirstPartyTypeKind.ZodDefault]: true,
     [z.ZodFirstPartyTypeKind.ZodUnknown]: true,
+    [z.ZodFirstPartyTypeKind.ZodReadonly]: true,
 
     // Zod types with partial support:
     [z.ZodFirstPartyTypeKind.ZodUnion]: false, // mostly HyTTS-internal

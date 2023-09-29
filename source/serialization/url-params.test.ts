@@ -103,6 +103,12 @@ describe("uRL search params", () => {
         ).toStrictEqual({ o: { a: true } });
     });
 
+    it("roundtrip nested readonly objects", () => {
+        expect(
+            roundtrip(z.object({ o: z.object({ a: z.boolean() }) }).readonly(), { o: { a: true } }),
+        ).toStrictEqual({ o: { a: true } });
+    });
+
     it("roundtrip nested objects and arrays", () => {
         expect(
             roundtrip(
