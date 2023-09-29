@@ -1,19 +1,12 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "extends": [
-        "config:base",
-        "schedule:weekly"
-    ],
+    "extends": ["config:base", "schedule:weekly"],
     "packageRules": [
         {
             "groupName": "HyTTS",
-            "paths": [
-                "package.json"
-            ],
-            "updateTypes": [
-                "minor",
-                "patch"
-            ]
+            "paths": ["package.json"],
+            "updateTypes": ["minor", "patch"]
         }
-    ]
+    ],
+    "lockFileMaintenance": { "enabled": true }
 }

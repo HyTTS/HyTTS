@@ -1,5 +1,3 @@
-/* eslint-disable jest/expect-expect */
-
 import { createContext, useContext } from "@/jsx/context";
 import { ErrorBoundary } from "@/jsx/error-boundary";
 import { jsxs, renderToString } from "@/jsx/jsx-runtime";
@@ -82,6 +80,7 @@ describe("jsx rendering", () => {
     });
 
     describe("children", () => {
+        // eslint-disable-next-line jest/expect-expect
         it("should raise type error if children are provided but component has no `children` prop", () => {
             const C1 = () => null;
             const C2 = (props: PropsWithChildren) => <>{props.children}</>;

@@ -94,6 +94,7 @@ module.exports = {
                 "jest/prefer-expect-resolves": "off",
                 "jest/require-hook": "off",
                 "jest/require-to-throw-message": "off",
+                "jest/expect-expect": ["error", { assertFunctionNames: ["expect*", "test*"] }],
             },
         },
     ],
