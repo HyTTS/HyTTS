@@ -66,6 +66,14 @@ describe("structural form schema", () => {
 
         const x3: { b?: number | string } = parseResult3;
         const y3: typeof parseResult3 = x3;
+
+        const schema4 = toPartialSchema(z.object({ b: z.number() }).readonly());
+
+        const parseResult4 = schema4.parse({ b: 1 });
+        expect(parseResult4).toStrictEqual({ b: 1 });
+
+        const x4: { readonly b: number | string } = parseResult4;
+        const y4: typeof parseResult4 = x4;
     });
 
     it("returns strings or actual types for all leaf array elements", () => {

@@ -15,6 +15,7 @@ import {
     ZodNumber,
     ZodObject,
     ZodOptional,
+    ZodReadonly,
     ZodString,
     type ZodType,
     type ZodTypeAny,
@@ -156,6 +157,8 @@ export function unpack<Output, Def extends ZodTypeDef, Input>(
             return unpackRecursive(schema.removeDefault(), data, insideUnion);
         } else if (schema instanceof ZodOptional) {
             return unpackRecursive(schema.unwrap(), data, insideUnion);
+        } else if (schema instanceof ZodReadonly) {
+            return unpackRecursive(schema._def.innerType, data, insideUnion);
         } else if (schema instanceof ZodEnum) {
             return data;
         } else if (schema instanceof ZodEffects) {
