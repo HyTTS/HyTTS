@@ -144,8 +144,7 @@ export function createRouter<Meta extends Record<string, unknown>>(defaultMeta: 
          *
          * - There can be only a single dynamic path parameter in a routes set.
          * - Route forwarding (e.g., `/abc`) and route definitions (e.g., `GET /abc`) cannot overlap.
-         * - Route forwardings or route definitions on `/` are only allowed if there is no path
-         *   parameter.
+         * - Route forwardings on `/` are only allowed if there is no path parameter.
          *
          * However, it _is_ OK to have both "GET /abc" and "POST /abc", because these can be
          * disambiguated based on the HTTP method.
@@ -264,8 +263,7 @@ export function createRouter<Meta extends Record<string, unknown>>(defaultMeta: 
                 }
             }
 
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-            if (fallbackComponent) {
+            if (is(routesSymbol, fallbackComponent)) {
                 for (const httpMethod of httpMethods) {
                     if (lookup[httpMethod].get("")) {
                         throw new Error("A router can only have one path parameter or `/` route.");

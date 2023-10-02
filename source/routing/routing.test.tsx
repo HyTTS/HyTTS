@@ -58,7 +58,7 @@ describe("routing", () => {
         href("POST /b");
     });
 
-    it("throws when the route specified and the component don't match", () => {
+    it("throws when the specified route kind and the route component don't match", () => {
         expect(() => routes({ "/": param(z.object({}), () => routes({})) as any })).toThrow();
         expect(() => routes({ "/": route(z.object({}), () => <></>) as any })).toThrow();
 
@@ -95,14 +95,6 @@ describe("routing", () => {
 
         expect(() =>
             routes({
-                "GET /": () => <></>,
-                // TODO: @ts-expect-error
-                "/:p": param(z.string(), () => routes({})),
-            }),
-        ).toThrow("can only have one");
-
-        expect(() =>
-            routes({
                 "/": routes({}),
                 // TODO: @ts-expect-error
                 "/:p": param(z.string(), () => routes({})),
@@ -124,6 +116,15 @@ describe("routing", () => {
                 "GET /x": () => <></>,
             }),
         ).toThrow("Duplicated");
+    });
+
+    it("allows `GET /` and a path parameter at the same time`", () => {
+        expect(() =>
+            routes({
+                "GET /": () => <></>,
+                "/:p": param(z.string(), () => routes({})),
+            }),
+        ).not.toThrow();
     });
 
     it("forbids malformed routes", () => {
