@@ -18,6 +18,26 @@ describe("structural form schema", () => {
         const y: typeof parseResult = x;
     });
 
+    it("supports the `null` schema", () => {
+        const schema = toPartialSchema(z.null());
+
+        const parseResult = schema.parse(null);
+        expect(parseResult).toBeNull();
+
+        const x: string | null = parseResult;
+        const y: typeof parseResult = x;
+    });
+
+    it("supports the `undefined` schema", () => {
+        const schema = toPartialSchema(z.undefined());
+
+        const parseResult = schema.parse(undefined);
+        expect(parseResult).toBeUndefined();
+
+        const x: string | undefined = parseResult;
+        const y: typeof parseResult = x;
+    });
+
     it("returns default values", () => {
         const schema = toPartialSchema(
             z.object({
@@ -44,6 +64,19 @@ describe("structural form schema", () => {
         expect(parseResult2).toStrictEqual({ b: "test", d: LocalDate.of(2023, 12, 1) });
 
         const x: { b: number | string; d: LocalDate | string } = parseResult1;
+        const y: typeof parseResult1 = x;
+    });
+
+    it("returns strings for enum schemas", () => {
+        const schema = toPartialSchema(z.object({ b: z.enum(["a", "b"]) }));
+
+        const parseResult1 = schema.parse({ b: "a" });
+        expect(parseResult1).toStrictEqual({ b: "a" });
+
+        const parseResult2 = schema.parse({ b: "b" });
+        expect(parseResult2).toStrictEqual({ b: "b" });
+
+        const x: { b: string } = parseResult1;
         const y: typeof parseResult1 = x;
     });
 

@@ -27,7 +27,7 @@ export type RouterDefinition<T extends Record<string, unknown>> = {
         : "ERROR: Properties must start with '{HttpMethod} /' or just '/'.";
 };
 
-const routerSymbol = Symbol();
+const routesSymbol = Symbol();
 const routeSymbol = Symbol();
 const paramSymbol = Symbol();
 
@@ -37,7 +37,7 @@ export type RoutingComponent = JsxComponent<{
 }>;
 
 export type RoutesComponent<Def extends RouterDefinition<Def>> = RoutingComponent & {
-    [routerSymbol]: Def | undefined;
+    [routesSymbol]: Def | undefined;
 };
 
 export type RouteComponent<
@@ -60,7 +60,7 @@ export function createRouter<Meta extends Record<string, unknown>>(defaultMeta: 
     });
 
     type TypeMap = {
-        [routerSymbol]: RoutesComponent<any>;
+        [routesSymbol]: RoutesComponent<any>;
         [routeSymbol]: RouteComponent<any, any>;
         [paramSymbol]: ParamComponent<any, any>;
     };
@@ -217,7 +217,7 @@ export function createRouter<Meta extends Record<string, unknown>>(defaultMeta: 
                         throw new Error(`Duplicated path segment '${pathSegment}'.`);
                     }
 
-                    if (is(routerSymbol, component) || is(routeSymbol, component)) {
+                    if (is(routesSymbol, component) || is(routeSymbol, component)) {
                         lookup[httpMethod].set(pathSegment, component);
                     } else if (typeof component === "function") {
                         const Component = component;
@@ -242,7 +242,7 @@ export function createRouter<Meta extends Record<string, unknown>>(defaultMeta: 
                     }
                 } else if (route.startsWith("/")) {
                     if (route === "/") {
-                        if (is(routerSymbol, value)) {
+                        if (is(routesSymbol, value)) {
                             setFallbackComponent(value, route.slice(1));
                         } else {
                             throw new Error("Router def for forwarding segment expected.");
@@ -254,6 +254,10 @@ export function createRouter<Meta extends Record<string, unknown>>(defaultMeta: 
                     const [method, pathSegment, ...rest] = route.split("/");
                     if (rest.length !== 0) {
                         throw new Error("Single slash expected in path segment.");
+                    }
+
+                    if (is(paramSymbol, value) || is(routesSymbol, value)) {
+                        throw new Error("Route def expected.");
                     }
 
                     addToLookup([method], pathSegment, value);
@@ -271,7 +275,7 @@ export function createRouter<Meta extends Record<string, unknown>>(defaultMeta: 
 
             const Wrapper = wrapper ?? (({ children }: PropsWithChildren) => <>{children}</>);
 
-            return tag(routerSymbol, ({ parent: Parent, pathSegments }) => {
+            return tag(routesSymbol, ({ parent: Parent, pathSegments }) => {
                 const httpContext = useHttpContext();
                 let remainingPathSegments = pathSegments;
                 let Component: RoutingComponent | undefined = lookup[httpContext.method].get(
@@ -348,10 +352,10 @@ export function createRouter<Meta extends Record<string, unknown>>(defaultMeta: 
         ): T extends RoutesComponent<any> ? T : ReturnType<T> => {
             let Component: RoutesComponent<any> | undefined = undefined;
 
-            return tag(routerSymbol, async ({ parent, pathSegments }) => {
+            return tag(routesSymbol, async ({ parent, pathSegments }) => {
                 if (!Component) {
                     const imported = (await loadModule()).default;
-                    Component = is(routerSymbol, imported) ? imported : imported(...params);
+                    Component = is(routesSymbol, imported) ? imported : imported(...params);
                 }
 
                 return <Component pathSegments={pathSegments} parent={parent} />;

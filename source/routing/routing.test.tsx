@@ -58,6 +58,20 @@ describe("routing", () => {
         href("POST /b");
     });
 
+    it("throws when the route specified and the component don't match", () => {
+        expect(() => routes({ "/": param(z.object({}), () => routes({})) as any })).toThrow();
+        expect(() => routes({ "/": route(z.object({}), () => <></>) as any })).toThrow();
+
+        expect(() =>
+            routes({ "GET /": lazy(() => Promise.resolve({ default: routes({}) })) as any }),
+        ).toThrow();
+        expect(() => routes({ "GET /": param(z.object({}), () => routes({})) as any })).toThrow();
+        expect(() => routes({ "GET /": 1 as any })).toThrow();
+
+        expect(() => routes({ "/:p": route(z.object({}), () => <></>) as any })).toThrow();
+        expect(() => routes({ "/:p": routes({}) as any })).toThrow();
+    });
+
     it("does not allow same route twice", () => {
         routes({
             "GET /a": () => <></>,
