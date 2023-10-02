@@ -1,81 +1,156 @@
-import type { Request, Response } from "express";
+import { randomBytes } from "node:crypto";
 import type { ZodType, ZodTypeDef } from "zod";
-import { createContext, useContext } from "@/jsx/context";
-import type { JsxElement, PropsWithChildren } from "@/jsx/jsx-types";
-import type { RouteUrl } from "@/routing/urls";
+import { HttpError, toHttpStatusCode } from "@/http/http-error";
+import { type ContextProviderProps, createContext, useContext } from "@/jsx/context";
+import { CspNonceProvider } from "@/jsx/csp-nonce";
+import { ErrorBoundary, type ErrorViewProps } from "@/jsx/error-boundary";
+import type { JsxElement } from "@/jsx/jsx-types";
+import { UniqueNameProvider } from "@/jsx/unique-name";
+import { log } from "@/log";
+import type { Href } from "@/routing/href";
 import { parseUrlSearchParams } from "@/serialization/url-params";
 
-const httpContext = createContext<Response>({ name: "http context" });
+/** The list of HTTP verbs supported by HyTTS. */
+export const httpMethods = ["GET", "POST"] as const;
 
-export type HttpContextProps = PropsWithChildren<{ readonly response: Response }>;
+/** The list of HTTP verbs supported by HyTTS. */
+export type HttpMethod = (typeof httpMethods)[number];
+
+type HttpContext = {
+    readonly method: HttpMethod;
+    readonly requestPath: string[];
+    readonly searchParams: string;
+    readonly requestBody: string;
+    readonly redirect: (url: string) => void;
+    readonly setHeader: (header: string, value: string) => void;
+    readonly setStatusCode: (code: number) => void;
+};
+
+const httpContext = createContext<HttpContext>({ name: "http context" });
+
+/** Provides access to the entire HTTP context. */
+export function useHttpContext() {
+    return useContext(httpContext);
+}
 
 /**
- * Provides access to the HTTP context, i.e., the HTTP response object, to all of its children.
+ * Starts rendering an HTTP response, providing access to the HTTP context, i.e., the HTTP response
+ * object, to all of its children.
  */
-export const HttpContextProvider = httpContext.Provider;
+export function HttpResponse(
+    props: ContextProviderProps<Omit<HttpContext, "method"> & { readonly method: string }>,
+) {
+    const method = props.value.method as HttpMethod;
+    if (!httpMethods.includes(method)) {
+        throw new HttpError("MethodNotSupported");
+    }
+
+    return (
+        <httpContext.Provider
+            value={{
+                ...props.value,
+                method,
+                requestPath: props.value.requestPath.filter((segment) => segment !== ""),
+            }}
+        >
+            <ErrorBoundary ErrorView={InternalServerError}>
+                <CspNonceProvider value={randomBytes(32).toString("base64")}>
+                    <UniqueNameProvider prefix="root">{props.children}</UniqueNameProvider>
+                </CspNonceProvider>
+            </ErrorBoundary>
+        </httpContext.Provider>
+    );
+
+    function InternalServerError({ error }: ErrorViewProps) {
+        useHttpStatusCode(toHttpStatusCode(error));
+        log.error(`${error}`);
+
+        return (
+            <html lang="en">
+                <head>
+                    <meta charset="utf-8" />
+                    <title>Error</title>
+                </head>
+                <body>
+                    <h1>Error</h1>
+                    <p>
+                        An error occurred while rendering the JSX. Add a top-level{" "}
+                        <code>ErrorBoundary</code> above your <code>Router</code> in your JSX
+                        component hierarchy to catch all errors that occur during rendering.
+                    </p>
+
+                    <p>
+                        Make sure that your top-level <code>ErrorBoundary</code> never throws an
+                        error when it is rendered. Otherwise, HyTTS will fall back to a static, more
+                        generic error message that might not be as helpful to your users.
+                    </p>
+                </body>
+            </html>
+        );
+    }
+}
 
 /**
  * Sends an HTTP header of the given `name` and with the given `value` as part of the response. This
- * function can be called multiple times to add additional HTTP response headers. If the function
- * is called again for the same header name, the last call wins. So components deeper in the tree
- * can overwrite headers set by their ancestors. It is a race condition if sibling components within
- * the tree set different status codes, so the behavior in that case is undefined.
+ * function can be called multiple times to add additional HTTP response headers. If the function is
+ * called again for the same header name, the last call wins. So components deeper in the tree can
+ * overwrite headers set by their ancestors. It is a race condition if sibling components within the
+ * tree set different status codes, so the behavior in that case is undefined.
  */
-export function useResponseHeader(name: string, value: string | number | readonly string[]) {
-    useContext(httpContext).setHeader(name, value);
+export function useResponseHeader(name: string, value: string) {
+    useHttpContext().setHeader(name, value);
 }
 
 /**
  * Sets the HTTP status code the given value. The last call to this function wins. So components
  * deeper in the tree can overwrite the status code set by their ancestors. It is a race condition
- * if sibling components within the tree set different status codes, so the behavior in that case
- * is undefined.
+ * if sibling components within the tree set different status codes, so the behavior in that case is
+ * undefined.
  */
 export function useHttpStatusCode(code: number) {
-    useContext(httpContext).status(code);
+    useHttpContext().setStatusCode(code);
 }
 
-/**
- * Returns the current request's search params, parsed with the given `schema`.
- */
+/** Returns the current request's search params, parsed with the given `schema`. */
 export function useUrlSearchParams<
     Output extends Record<string, unknown>,
     Def extends ZodTypeDef,
     Input,
 >(schema: ZodType<Output, Def, Input>): Output {
-    return parseUrlSearchParams(schema, getSearchParams(useContext(httpContext).req))!;
+    return parseUrlSearchParams(schema, useHttpContext().searchParams)!;
 }
 
 /**
  * Sets the route URL the browser should be redirected to using a 302 HTTP status code. Immediately
- * sends the response so ensure that nothing else gets rendered. You cannot redirect more than once in
- * the same HTTP response.
+ * sends the response so ensure that nothing else gets rendered. You cannot redirect more than once
+ * in the same HTTP response.
  */
-export function useRedirect(redirectTo: RouteUrl) {
+export function useRedirect(redirectTo: Href<"GET">) {
     // SECURITY: Do not allow redirects outside of our app, when someone fakes the `RouteUrl`, see:
     // https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
     if (!isRelativeUrl(redirectTo.url)) {
         throw new Error("Redirecting to absolute URLs is unsupported for security reasons.");
     }
 
-    useContext(httpContext).redirect(redirectTo.url);
+    useHttpContext().redirect(redirectTo.url);
 }
 
 /**
- * Sets an absolute URL, typically to some other webpage or app, the browser should be redirected to using
- * a 302 HTTP status code. Immediately sends the response so ensure that nothing else gets rendered. You
- * cannot redirect more than once in the same HTTP response.
+ * Sets an absolute URL, typically to some other webpage or app, the browser should be redirected to
+ * using a 302 HTTP status code. Immediately sends the response so ensure that nothing else gets
+ * rendered. You cannot redirect more than once in the same HTTP response.
  *
- * SECURITY: Redirecting to absolute URLs can be dangerous from a security perspective. Ensure that you
- * redirect to an expected URL and that you understand the OWASP security cheat sheet for redirects:
+ * SECURITY: Redirecting to absolute URLs can be dangerous from a security perspective. Ensure that
+ * you redirect to an expected URL and that you understand the OWASP security cheat sheet for
+ * redirects:
  * https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
  */
 export function useAbsoluteRedirect(url: string) {
-    useContext(httpContext).redirect(url);
+    useHttpContext().redirect(url);
 }
 
 export type RedirectProps = {
-    readonly to: RouteUrl;
+    readonly href: Href<"GET">;
 };
 
 /**
@@ -83,63 +158,30 @@ export type RedirectProps = {
  * `useRedirect`. See the remarks there regarding the precise behavior.
  */
 export function Redirect(props: RedirectProps): JsxElement {
-    useRedirect(props.to);
+    useRedirect(props.href);
     return null;
 }
 
 export type AbsoluteRedirectProps = {
-    readonly to: string;
+    readonly href: string;
 };
 
 /**
- * Sets an absolute URL, typically to some other webpage or app, the browser should be redirected to using
- * a 302 HTTP status code, internally using `useAbsoluteRedirect`. See the remarks there regarding the precise
- * behavior.
+ * Sets an absolute URL, typically to some other webpage or app, the browser should be redirected to
+ * using a 302 HTTP status code, internally using `useAbsoluteRedirect`. See the remarks there
+ * regarding the precise behavior.
  *
- * SECURITY: Redirecting to absolute URLs can be dangerous from a security perspective. Ensure that you
- * redirect to an expected URL and that you understand the OWASP security cheat sheet for redirects:
+ * SECURITY: Redirecting to absolute URLs can be dangerous from a security perspective. Ensure that
+ * you redirect to an expected URL and that you understand the OWASP security cheat sheet for
+ * redirects:
  * https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
  */
 export function AbsoluteRedirect(props: AbsoluteRedirectProps): JsxElement {
-    useAbsoluteRedirect(props.to);
+    useAbsoluteRedirect(props.href);
     return null;
 }
 
-/**
- * Ensures that the request's search params are a string and returns it. The string is typically expected
- * to be URL encoded, but that is not checked here.
- */
-export function getSearchParams(req: Request): string {
-    // The type is wrong here because we're actually not using qs
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (req.query && typeof req.query !== "string") {
-        throw new Error(
-            "Expected URL query string to be unparsed. Make sure you've disabled query string parsing in " +
-                'Express like so: `app.set("query parser", (queryString: string) => queryString)`',
-        );
-    }
-
-    return req.query;
-}
-
-/**
- * Ensures that the request body is a string and returns it. The string is typically expected to be
- * URL encoded, but that is not checked here.
- */
-export function getRequestBody(req: Request): string {
-    if (req.body && typeof req.body !== "string") {
-        throw new Error(
-            "Expected request body to be a string. Make sure you've enabled body string handling in " +
-                'Express like so: `app.use(express.text({ type: "application/x-www-form-urlencoded" }))`',
-        );
-    }
-
-    return req.body;
-}
-
-/**
- * Checks whether the given URL is relative or absolute.
- */
+/** Checks whether the given URL is relative or absolute. */
 function isRelativeUrl(url: string) {
     const origin = "https://example.com";
     return new URL(url, origin).origin === origin;

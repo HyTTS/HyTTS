@@ -11,8 +11,8 @@ export type ContextProviderProps<T> = PropsWithChildren<{
 }>;
 
 /**
- * A context handles some state scoped to the children of its `Provider` component.
- * A provided context can be overwritten in lower parts of the component tree.
+ * A context handles some state scoped to the children of its `Provider` component. A provided
+ * context can be overwritten in lower parts of the component tree.
  */
 export type Context<T> = {
     readonly [contextIdSymbol]: symbol;
@@ -25,8 +25,8 @@ export type Context<T> = {
 /** Configures the behavior of a context. */
 export type ContextOptions<T> = {
     /**
-     * The default value that is returned by a call to `useContext` for the current context if no context has
-     * been set by any ancestor component.
+     * The default value that is returned by a call to `useContext` for the current context if no
+     * context has been set by any ancestor component.
      */
     readonly default?: { value: T };
     /** The context's name, useful for debugging purposes. */
@@ -34,7 +34,8 @@ export type ContextOptions<T> = {
 };
 
 /**
- * Creates a new `Context<T>` instance. The resulting context is typically stored in a module-scoped variable.
+ * Creates a new `Context<T>` instance. The resulting context is typically stored in a module-scoped
+ * variable.
  */
 export function createContext<T>(options?: ContextOptions<T>): Context<T> {
     const id = Symbol();
@@ -64,7 +65,7 @@ export function useContext<T>(context: Context<T>): T {
             throw new Error(
                 `No context named '${
                     context.options?.name ?? "[unnamed context]"
-                }' has been set by any ancestor component and the context does not have a default value.`,
+                }' has been set by any ancestor component and the context has no default value.`,
             );
         }
     }

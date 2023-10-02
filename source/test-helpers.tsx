@@ -1,11 +1,9 @@
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import express, { type Express, text } from "express";
-import { createRenderCallback } from "@/http/render-callback";
-import type { JsxComponent, PropsWithChildren } from "@/jsx/jsx-types";
-import { toExpressRouter } from "@/routing/express-router";
-import type { RoutingDefinition } from "@/routing/routing";
-import { type ActionUrl, createUrls, type RouteUrl, type Urls } from "@/routing/urls";
+import { createExpressMiddleware } from "@/routing/express-middleware";
+import { getHrefs, type Href, type HrefCreator } from "@/routing/href";
+import { Router, type RoutesComponent } from "@/routing/router";
 
 type UseAppCallback<TReturn = void> = (
     fetch: (url: string, init?: RequestInit) => Promise<Response>,
@@ -13,9 +11,9 @@ type UseAppCallback<TReturn = void> = (
 ) => TReturn | Promise<TReturn>;
 
 /**
- * Starts an HTTP server for the given Express app on a random port for the duration of the given callback.
- * The callback receives a `fetch` method that can be used to make requests to the test server as well as
- * the base URL of the test server.
+ * Starts an HTTP server for the given Express app on a random port for the duration of the given
+ * callback. The callback receives a `fetch` method that can be used to make requests to the test
+ * server as well as the base URL of the test server.
  */
 async function testApp<TReturn>(
     app: Express,
@@ -39,44 +37,34 @@ async function testApp<TReturn>(
 }
 
 /**
- * Starts an Express app for testing purposes based on the given `routingDefinition`. Provides the URLs
- * for the routes as well as two fetch functions for routes and actions to the callback that executes
- * the actual testing logic.
+ * Starts an Express app for testing purposes based on the given `routes`. Provides the URLs for the
+ * routes as well as two fetch functions for routes and actions to the callback that executes the
+ * actual testing logic.
  */
-export function runTestApp<T extends RoutingDefinition>(
-    routingDefinition: T | (() => T),
+export function runTestApp<T extends RoutesComponent<any>>(
+    routes: T,
     useApp: (
-        urls: Urls<T>,
-        fetchRoute: (route: RouteUrl) => Promise<Response>,
-        fetchAction: (action: ActionUrl) => Promise<Response>,
+        href: HrefCreator<T>,
+        fetch: (href: Href<any, any>) => Promise<Response>,
     ) => Promise<void>,
-    appContext: JsxComponent<PropsWithChildren> = ({ children }) => <>{children}</>,
 ) {
-    const routes =
-        typeof routingDefinition === "function" ? routingDefinition() : routingDefinition;
-
-    const renderCallback = createRenderCallback({
-        document: ({ children }) => <>{children}</>,
-        appContext,
-        errorView: ({ error }) => <>non-fatal: {`${error}`}</>,
-        fatalErrorView: (error) => `fatal: ${error}`,
-    });
-
     const app = express();
     app.set("query parser", (queryString: string) => queryString);
     app.use(text({ type: "application/x-www-form-urlencoded" }));
-    app.use(toExpressRouter(routes, renderCallback));
+    app.use(createExpressMiddleware(<Router routes={routes} />, (error) => `fatal: ${error}`));
 
     return testApp(app, (fetch) =>
-        useApp(
-            createUrls(routes),
-            (route) => fetch(route.url),
-            (action) =>
-                fetch(action.url, {
-                    method: "POST",
-                    body: action.actionParams,
-                    headers: { "content-type": "application/x-www-form-urlencoded" },
-                }),
+        useApp(getHrefs(routes), (href) =>
+            fetch(
+                href.url,
+                href.method === "GET"
+                    ? {}
+                    : {
+                          method: "POST",
+                          body: href.body,
+                          headers: { "content-type": "application/x-www-form-urlencoded" },
+                      },
+            ),
         ),
     );
 }

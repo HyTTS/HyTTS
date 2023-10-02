@@ -20,9 +20,9 @@ const browserFuncSymbol = Symbol();
 export type CapturedVariable = undefined | null | boolean | number | string | BrowserFunc<any>;
 
 /**
- * Represents a script, i.e., a sequence of JavaScript statements, that can be serialized to and executed
- * by the browser. A browser script can never capture any surrounding server variables implicitly. All
- * server variables must be passed explicitly for security reasons.
+ * Represents a script, i.e., a sequence of JavaScript statements, that can be serialized to and
+ * executed by the browser. A browser script can never capture any surrounding server variables
+ * implicitly. All server variables must be passed explicitly for security reasons.
  */
 export type BrowserScript = {
     readonly [browserScriptSymbol]: null;
@@ -32,17 +32,15 @@ export type BrowserScript = {
 
 /**
  * Represents a function that can be serialized to and executed by the browser. A browser function
- * can never capture any surrounding server variables implicitly. All server variables must be passed
- * explicitly for security reasons.
+ * can never capture any surrounding server variables implicitly. All server variables must be
+ * passed explicitly for security reasons.
  */
 export type BrowserFunc<T extends (...args: any[]) => any> = {
     readonly [browserFuncSymbol]: T | null;
     readonly serializeScript: SerializeScript;
 };
 
-/**
- * Renders all browser scripts and functions registered by its children.
- */
+/** Renders all browser scripts and functions registered by its children. */
 export function BrowserScriptRenderer(props: PropsWithChildren) {
     // Contains the browser scripts or functions that have been registered while the renderer's
     // children are rendered. We have to generate the appropriate browser code for these scripts
@@ -154,8 +152,8 @@ export function createEventHandler<
 }
 
 /**
- * Registers the given browser script so that the appropriate browser-side JavaScript code gets emitted.
- * The emitted code also includes all transitively referenced browser functions.
+ * Registers the given browser script so that the appropriate browser-side JavaScript code gets
+ * emitted. The emitted code also includes all transitively referenced browser functions.
  */
 export function useRegisterBrowserScript(script: BrowserScript) {
     useContext(scriptContext)(script);
@@ -183,16 +181,12 @@ export function useRegisterBrowserEventHandler(
     });
 }
 
-/**
- * Checks if the given value is a browser script.
- */
+/** Checks if the given value is a browser script. */
 export function isBrowserScript(value: unknown): value is BrowserScript {
     return value !== null && typeof value === "object" && browserScriptSymbol in value;
 }
 
-/**
- * Checks if the given value is a browser function.
- */
+/** Checks if the given value is a browser function. */
 export function isBrowserFunc(value: unknown): value is BrowserFunc<any> {
     return value !== null && typeof value === "object" && browserFuncSymbol in value;
 }

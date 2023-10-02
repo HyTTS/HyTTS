@@ -8,6 +8,7 @@ import {
     ZodDefault,
     ZodEffects,
     ZodEnum,
+    ZodError,
     ZodIntersection,
     ZodLiteral,
     ZodNull,
@@ -18,20 +19,20 @@ import {
     ZodReadonly,
     ZodString,
     type ZodType,
-    type ZodTypeAny,
     type ZodTypeDef,
     ZodUndefined,
     ZodUnion,
     ZodUnknown,
 } from "zod";
+import { HttpError } from "@/http/http-error";
 
 export type PackedData = undefined | null | string | { [key: string]: PackedData } | PackedData[];
 
 /**
- * Packs the given `value` such that its structure (e.g., arrays, objects, nested arrays and objects, ...) is
- * maintained while all "leaf properties" are serialized into `string`s, except for `null` and `undefined`.
- * "Leaf properties" are `boolean`, `number`, `Date` as well as any type that provides its own implementation
- * of the `toString()` method.
+ * Packs the given `value` such that its structure (e.g., arrays, objects, nested arrays and
+ * objects, ...) is maintained while all "leaf properties" are serialized into `string`s, except for
+ * `null` and `undefined`. "Leaf properties" are `boolean`, `number`, `Date` as well as any type
+ * that provides its own implementation of the `toString()` method.
  */
 export function pack(value: unknown): PackedData {
     if (value === undefined || value === null) {
@@ -75,10 +76,10 @@ export function pack(value: unknown): PackedData {
 }
 
 /**
- * Recursively goes through the given `schema` and `data` together to unpack `data` in correspondence with
- * the `schema`. That is, the structure of `schema` is enforced and all "leaf components" (see `pack` above)
- * are deserialized from `string` into the type expected by the Zod schema. Also, all validations and
- * transformations defined by the Zod schema are carried out.
+ * Recursively goes through the given `schema` and `data` together to unpack `data` in
+ * correspondence with the `schema`. That is, the structure of `schema` is enforced and all "leaf
+ * components" (see `pack` above) are deserialized from `string` into the type expected by the Zod
+ * schema. Also, all validations and transformations defined by the Zod schema are carried out.
  */
 export function unpack<Output, Def extends ZodTypeDef, Input>(
     schema: ZodType<Output, Def, Input> | undefined,
@@ -88,7 +89,15 @@ export function unpack<Output, Def extends ZodTypeDef, Input>(
         return undefined;
     }
 
-    return schema.parse(unpackRecursive(schema, data, false));
+    try {
+        return schema.parse(unpackRecursive(schema, data, false));
+    } catch (e: unknown) {
+        if (e instanceof ZodError) {
+            throw new HttpError("BadRequest", e);
+        } else {
+            throw e;
+        }
+    }
 
     function unpackRecursive(schema: ZodType, data: any, insideUnion: boolean): any {
         if (
@@ -175,7 +184,7 @@ export function unpack<Output, Def extends ZodTypeDef, Input>(
             // or arrays within unions.
             // Since this implementation might be somewhat problematic, it is not officially documented.
             // It is mostly used for HyTTS-internal types.
-            for (const option of (schema as ZodUnion<[ZodTypeAny]>).options) {
+            for (const option of (schema as ZodUnion<[ZodType]>).options) {
                 const transformedData = unpackRecursive(option, data, true);
                 const result = option.safeParse(transformedData);
                 if (result.success) {

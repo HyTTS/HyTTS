@@ -16,8 +16,8 @@ export function UniqueNameProvider(props: UniqueNameProviderProps) {
 }
 
 /**
- * Generates a globally unique name that can be used for HTML element ids or JavaScript identifiers. The generated
- * id is *not* guaranteed to be stable when rerendering the same view.
+ * Generates a globally unique name that can be used for HTML element ids or JavaScript identifiers.
+ * The generated id is _not_ guaranteed to be stable when rerendering the same view.
  */
 export function useUniqueName() {
     const context = useContext(uniqueNameContext);

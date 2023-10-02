@@ -3,5 +3,18 @@
     "typescript.preferences.importModuleSpecifier": "non-relative",
     "[typescript]": { "editor.codeActionsOnSave": ["source.fixAll.eslint"] },
     "[typescriptreact]": { "editor.codeActionsOnSave": ["source.fixAll.eslint"] },
-    "[json]": { "editor.defaultFormatter": "esbenp.prettier-vscode" }
+    "[json]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+    "cSpell.words": [
+        "arrayness",
+        "hrefs",
+        "hytts",
+        "IIFE",
+        "IIFEs",
+        "joda",
+        "jsxs",
+        "OWASP",
+        "reconcilation",
+        "subrouter",
+        "Zod"
+    ]
 }

@@ -1,13 +1,13 @@
-import { log } from "@/log";
+import { log } from "$/log.browser";
 
 /**
- * Reconciles, i.e., merges, two DOM nodes. Inspired by React's reconciliation algorithm.
- * (see https://reactjs.org/docs/reconciliation.html)
+ * Reconciles, i.e., merges, two DOM nodes. Inspired by React's reconciliation algorithm. (see
+ * https://reactjs.org/docs/reconciliation.html)
+ *
  * @param currentElement The element currently within the DOM that should be updated.
  * @param newElement The new element describing what the DOM will eventually look like.
- * @returns Returns either `currentElement` or `newElement`, depending on which of the
- *          two should remain/be placed into the DOM. The returned element has been
- *          reconciled recursively.
+ * @returns Returns either `currentElement` or `newElement`, depending on which of the two should
+ *   remain/be placed into the DOM. The returned element has been reconciled recursively.
  */
 export function reconcile(currentElement: Element, newElement: Element): Element {
     prepareScriptElements(newElement);
@@ -192,12 +192,13 @@ function getKeyMap(element: Element) {
 }
 
 /**
- * Prepares new `script` elements returned from the server so that they can be executed once they are
- * added to the DOM. The way we parse the HTML, all `script` tags are in an disabled state, so we have
- * to create new, enabled ones. Moreover, we have to obtain the CSP nonce from the document in order to
- * be able to use the correct nonces for all `script` tags during reconciliation. When frames obtain
- * additional HTML from the server, any new `script` tags use a different nonce, and hence the browser
- * would block script execution if we didn't set the original nonce of the current page.
+ * Prepares new `script` elements returned from the server so that they can be executed once they
+ * are added to the DOM. The way we parse the HTML, all `script` tags are in an disabled state, so
+ * we have to create new, enabled ones. Moreover, we have to obtain the CSP nonce from the document
+ * in order to be able to use the correct nonces for all `script` tags during reconciliation. When
+ * frames obtain additional HTML from the server, any new `script` tags use a different nonce, and
+ * hence the browser would block script execution if we didn't set the original nonce of the current
+ * page.
  */
 function prepareScriptElements(newElement: Element) {
     const cspNonce = (
@@ -229,6 +230,6 @@ function prepareScriptElements(newElement: Element) {
         newScript.async = false;
         newScript.nonce = cspNonce;
 
-        currentScript.parentNode?.replaceChild(newScript, currentScript);
+        currentScript.parentNode!.replaceChild(newScript, currentScript);
     });
 }

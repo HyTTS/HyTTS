@@ -24,7 +24,8 @@
         "strict": true,
         "baseUrl": ".",
         "paths": {
-            "@/*": ["./source/*"]
+            "@/*": ["./source/*"],
+            "$/*": ["./source/browser/*"]
         },
         "outDir": "./tmp/typescript/",
         "tsBuildInfoFile": "./tmp/typescript/HyTTS.tsbuildinfo",

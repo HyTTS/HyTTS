@@ -17,7 +17,6 @@ import {
     ZodReadonly,
     ZodString,
     type ZodType,
-    type ZodTypeAny,
     ZodUndefined,
     ZodUnion,
 } from "zod";
@@ -31,12 +30,12 @@ import {
  * unprocessed form data is thus never valid according to the form's schema if it expects any type
  * other than `string` somewhere. However, we want to be able to validate forms and show meaningful
  * validation errors to the user when the form is rerendered, so we have to be able to deal with
- * partially valid form state. So in order to be able to safely work with such invalid form data,
- * we at least want to have the guarantee that the structure of the data, e.g., nested objects and
+ * partially valid form state. So in order to be able to safely work with such invalid form data, we
+ * at least want to have the guarantee that the structure of the data, e.g., nested objects and
  * arrayness, matches our expectations. The partial schema thus fails parsing when there any
  * structural schema violation. Afterwards, we can safely traverse the data using the array methods
- * or `Object.entries`, and so on. That is, we can be sure at this point that noone was able to tamper
- * with the structure of the data.
+ * or `Object.entries`, and so on. That is, we can be sure at this point that noone was able to
+ * tamper with the structure of the data.
  *
  * If the structure of the data is indeed valid, the partial schema returns an object that might be
  * either partially or fully valid according to the original schema. The partial schema, however,
@@ -44,14 +43,15 @@ import {
  * string for all leaf object properties and leaf array elements where some other data type is
  * expected; object nesting and arrayness, on the other hand, is always guaranteed.
  *
- * So if partial validation fails, we can still rerender the form with helpful error messages for the
- * user. This also allows us, for example, to modify the form data before rerendering the form, e.g.,
- * in order to correct some invalid input automatically or by adding or removing form array elements.
- * In doing so, we have to be able to cope with non-validated and untransformed string values where
- * we would usually expect something different in a fully-validated context, but we can work with
- * the actual property types and validated values in some cases, e.g., when assigning new values.
+ * So if partial validation fails, we can still rerender the form with helpful error messages for
+ * the user. This also allows us, for example, to modify the form data before rerendering the form,
+ * e.g., in order to correct some invalid input automatically or by adding or removing form array
+ * elements. In doing so, we have to be able to cope with non-validated and untransformed string
+ * values where we would usually expect something different in a fully-validated context, but we can
+ * work with the actual property types and validated values in some cases, e.g., when assigning new
+ * values.
  */
-export function toPartialSchema<T extends ZodTypeAny>(schema: T): ToPartialSchema<T> {
+export function toPartialSchema<T extends ZodType>(schema: T): ToPartialSchema<T> {
     return recurse(schema) as any;
 
     function recurse(schema: ZodType): ZodType {
@@ -117,14 +117,10 @@ export function toPartialSchema<T extends ZodTypeAny>(schema: T): ToPartialSchem
     }
 }
 
-export type ToPartialSchema<T extends ZodTypeAny> = T extends ZodObject<
-    infer S extends ZodRawShape,
-    infer U,
-    infer C
->
-    ? ZodObject<{ [K in keyof S]: ToPartialSchema<S[K]> }, U, C>
-    : T extends ZodArray<infer U, infer C>
+export type ToPartialSchema<T extends ZodType> = T extends ZodArray<infer U, infer C>
     ? ZodArray<ToPartialSchema<U>, C>
+    : T extends ZodObject<infer S extends ZodRawShape, infer U, infer C>
+    ? ZodObject<{ [K in keyof S]: ToPartialSchema<S[K]> }, U, C>
     : T extends ZodNullable<infer U>
     ? ZodNullable<ToPartialSchema<U>>
     : T extends ZodDefault<infer U>
@@ -139,10 +135,14 @@ export type ToPartialSchema<T extends ZodTypeAny> = T extends ZodObject<
     ? ZodReadonly<ToPartialSchema<I>>
     : T extends ZodUnion<infer U>
     ? ZodUnion<ConvertUnionCases<U>>
+    : T extends ZodString
+    ? ZodString
+    : T extends ZodType<Record<string, unknown>> // this case covers generic code over "object-like" ZodTypes
+    ? T
     : ZodUnion<[T, ZodString]>;
 
-type ConvertUnionCases<T extends readonly ZodTypeAny[]> = T extends [infer U extends ZodTypeAny]
+type ConvertUnionCases<T extends readonly ZodType[]> = T extends [infer U extends ZodType]
     ? [ToPartialSchema<U>]
-    : T extends [infer U extends ZodTypeAny, ...infer V extends ZodTypeAny[]]
+    : T extends [infer U extends ZodType, ...infer V extends ZodType[]]
     ? [ToPartialSchema<U>, ...ConvertUnionCases<V>]
     : never;

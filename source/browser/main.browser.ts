@@ -1,20 +1,11 @@
-import {
-    executeAction,
-    loadRoute,
-    navigateToAction,
-    navigateToRoute,
-    updateFrame,
-} from "@/browser/frame.browser";
-import { interceptClicks, interceptHistoryChanges } from "@/browser/navigation.browser";
+import { updateFrame } from "$/frame.browser";
+import { interceptClicks, interceptHistoryChanges, navigateTo } from "$/navigation.browser";
 
 interceptClicks();
 interceptHistoryChanges();
 
 const externalApi = {
-    executeAction,
-    loadRoute,
-    navigateToAction,
-    navigateToRoute,
+    navigateTo,
     updateFrame,
 } as const;
 

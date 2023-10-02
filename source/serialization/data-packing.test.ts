@@ -9,13 +9,13 @@ describe("data packing", () => {
         // eslint bug, this is actually *NOT* a void expression
         // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
         expect(unpack(z.undefined(), undefined)).toBeUndefined();
-        expect(() => unpack(z.undefined(), "test")).toThrow("Expected undefined, received string");
+        expect(() => unpack(z.undefined(), "test")).toThrow();
     });
 
     it("handles `null`", () => {
         expect(pack(null)).toBeNull();
         expect(unpack(z.null(), null)).toBeNull();
-        expect(() => unpack(z.null(), "test")).toThrow("Expected null, received string");
+        expect(() => unpack(z.null(), "test")).toThrow();
     });
 
     it("handles `unknown`", () => {
@@ -31,7 +31,7 @@ describe("data packing", () => {
         expect(pack(false)).toBe("false");
         expect(unpack(z.boolean(), "false")).toBe(false);
         expect(unpack(z.boolean(), "true")).toBe(true);
-        expect(() => unpack(z.boolean(), "test")).toThrow("Expected boolean, received string");
+        expect(() => unpack(z.boolean(), "test")).toThrow();
     });
 
     it("handles `number`", () => {
@@ -39,7 +39,7 @@ describe("data packing", () => {
         expect(pack(-3.14)).toBe("-3.14");
         expect(unpack(z.number(), "1")).toBe(1);
         expect(unpack(z.number(), "-3.14")).toBe(-3.14);
-        expect(() => unpack(z.number(), "test")).toThrow("Expected number, received string");
+        expect(() => unpack(z.number(), "test")).toThrow();
     });
 
     it("handles `string`", () => {
@@ -53,13 +53,13 @@ describe("data packing", () => {
         expect(unpack(z.literal(1), "1")).toBe(1);
         expect(unpack(z.literal(true), "true")).toBe(true);
         expect(unpack(z.literal("abc\"'"), "abc\"'")).toBe("abc\"'");
-        expect(() => unpack(z.literal(Symbol()), "")).toThrow("Literals are only supported for");
+        expect(() => unpack(z.literal(Symbol()), "")).toThrow();
     });
 
     it("handles enums", () => {
         expect(unpack(z.enum(["a", "b"]), "a")).toBe("a");
         expect(unpack(z.enum(["a", "b"]), "b")).toBe("b");
-        expect(() => unpack(z.enum(["a", "b"]), "c")).toThrow("Invalid enum value");
+        expect(() => unpack(z.enum(["a", "b"]), "c")).toThrow();
     });
 
     it("handles `Date`", () => {
@@ -103,7 +103,7 @@ describe("data packing", () => {
             }),
         ).toStrictEqual({ a: { b: { c: 1 }, d: true } });
 
-        expect(() => unpack(z.object({}), "test")).toThrow("Data is not an object.");
+        expect(() => unpack(z.object({}), "test")).toThrow();
     });
 
     it("handles readonly objects", () => {
@@ -119,8 +119,8 @@ describe("data packing", () => {
     it("handles intersections", () => {
         const schema = z.object({ a: z.number() }).and(z.object({ b: z.string(), c: z.null() }));
         expect(unpack(schema, { a: "1", b: "", c: null })).toStrictEqual({ a: 1, b: "", c: null });
-        expect(() => unpack(schema, { a: "1" })).toThrow("Required");
-        expect(() => unpack(schema, { b: "1", c: null })).toThrow("Required");
+        expect(() => unpack(schema, { a: "1" })).toThrow();
+        expect(() => unpack(schema, { b: "1", c: null })).toThrow();
     });
 
     it("handles objects with custom `toString()`", () => {
@@ -128,12 +128,12 @@ describe("data packing", () => {
         expect(pack(now)).toStrictEqual(now.toString());
 
         expect(unpack(zLocalDate(), now.toString())).toStrictEqual(now);
-        expect(() => unpack(zLocalDate(), "test")).toThrow("Not a local date");
+        expect(() => unpack(zLocalDate(), "test")).toThrow();
     });
 
     it("throws for class instances", () => {
         class X {
-            constructor(public a: number) {}
+            public constructor(public a: number) {}
         }
         expect(() => pack(new X(1))).toThrow("Cannot pack object with prototype.");
     });
@@ -150,7 +150,7 @@ describe("data packing", () => {
             [3],
         ]);
 
-        expect(() => unpack(z.string().array(), "test")).toThrow("Data is not an array.");
+        expect(() => unpack(z.string().array(), "test")).toThrow();
     });
 
     it("handles nested arrays and objects arrays", () => {
@@ -194,9 +194,7 @@ describe("data packing", () => {
 
     it("throws if property name contains '.'", () => {
         expect(() => pack({ "a.b": 1 })).toThrow("Invalid symbol '.'");
-        expect(() => unpack(z.object({ "a.b": z.number() }), { "a.b": "1" })).toThrow(
-            "Invalid symbol '.'",
-        );
+        expect(() => unpack(z.object({ "a.b": z.number() }), { "a.b": "1" })).toThrow();
     });
 
     it("handles unions of primitive types", () => {
