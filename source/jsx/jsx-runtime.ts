@@ -20,16 +20,21 @@ export async function renderToString(element: JsxElement) {
 }
 
 /**
- * Represents a component that can be used to group multiple `JsxElement`s into a single one.
- * The fragment itself is never rendered, only its children are. The `Fragment` function itself
- * is never invoked; it's just used by `jsxs` below to check if any HTML should be rendered for
- * the current element.
+ * Represents a component that can be used to group multiple `JsxElement`s into a single one. The
+ * fragment itself is never rendered, only its children are. The `Fragment` function itself is never
+ * invoked; it's just used by `jsxs` below to check if any HTML should be rendered for the current
+ * element.
  */
-export function Fragment() {}
+export function Fragment(_props: PropsWithChildren): JsxExpression {
+    throw new Error(
+        "Something is wrong with your JSX transpilation. The fragment component should never be executed.",
+    );
+}
 
 /**
- * Creates a render function that serializes the given intrinsic element or function component into an HTML string.
- * This function is invoked automatically by the compiler when it encounters a JSX expression like `<div/>`.
+ * Creates a render function that serializes the given intrinsic element or function component into
+ * an HTML string. This function is invoked automatically by the compiler when it encounters a JSX
+ * expression like `<div/>`.
  */
 export function jsxs<TProps extends Record<string, unknown> = {}>(
     element: string | JsxComponent<TProps>,

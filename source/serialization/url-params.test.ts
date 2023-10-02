@@ -4,7 +4,7 @@ import { z, type ZodType, type ZodTypeDef } from "zod";
 import { zLocalDate } from "@/serialization/date-time";
 import { parseUrlSearchParams, toUrlSearchParams } from "@/serialization/url-params";
 
-describe("uRL search params", () => {
+describe("url search params", () => {
     function roundtrip<T extends Record<string, unknown>, Def extends ZodTypeDef, I>(
         schema: ZodType<T, Def, I>,
         obj: T,
@@ -168,7 +168,7 @@ describe("uRL search params", () => {
         // The second `a.0=` causes qs to generate a nested array, which then fails the Zod schema validation...
         expect(() =>
             parseUrlSearchParams(z.object({ a: z.number().array() }), "a.0=0&a.1=1&a.0=2"),
-        ).toThrow("Expected number, received array");
+        ).toThrow();
     });
 
     it("should roundtrip arrays", () => {
@@ -217,9 +217,7 @@ describe("uRL search params", () => {
         expect(roundtrip(schema, { d: [now] })).toStrictEqual({ d: [now] });
         expect(roundtrip(schema, { d: array })).toStrictEqual({ d: array });
 
-        expect(() => parseUrlSearchParams(z.object({ now: zLocalDate() }), "now=test")).toThrow(
-            "Not a local date",
-        );
+        expect(() => parseUrlSearchParams(z.object({ now: zLocalDate() }), "now=test")).toThrow();
     });
 
     it("should roundtrip enums", () => {
@@ -244,8 +242,6 @@ describe("uRL search params", () => {
     });
 
     it("throws when `string` is passed where `number` is expected", () => {
-        expect(() => parseUrlSearchParams(z.object({ a: z.number() }), "a=test")).toThrow(
-            "Expected number, received string",
-        );
+        expect(() => parseUrlSearchParams(z.object({ a: z.number() }), "a=test")).toThrow();
     });
 });

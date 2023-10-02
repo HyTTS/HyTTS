@@ -3,9 +3,10 @@ import { ZodDefault, ZodOptional, type ZodType, type ZodTypeDef } from "zod";
 import { pack, unpack } from "@/serialization/data-packing";
 
 /**
- * Parses the given URL search params using the given Zod schema. The schema must be an object schema,
- * and you should consider adding default values where necessary, so that missing properties in the URL do
- * not cause parsing errors. Some advanced Zod types are not fully supported, such as unions.
+ * Parses the given URL search params using the given Zod schema. The schema must be an object
+ * schema, and you should consider adding default values where necessary, so that missing properties
+ * in the URL do not cause parsing errors. Some advanced Zod types are not fully supported, such as
+ * unions.
  */
 export function parseUrlSearchParams<
     Output extends Record<string, unknown> | undefined,
@@ -35,9 +36,7 @@ export function parseUrlSearchParams<
     );
 }
 
-/**
- * Converts the given object into an URL-encoded search params string.
- */
+/** Converts the given object into an URL-encoded search params string. */
 export function toUrlSearchParams<T extends Record<string, unknown>>(
     obj: T | null | undefined,
 ): string {

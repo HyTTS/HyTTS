@@ -1,6 +1,7 @@
 /**
- * Escapes the given string in an HTML-safe way depending on whether the string is used in an attribute
- * or child position. Taken and adapted from https://github.com/ryansolid/dom-expressions (MIT license).
+ * Escapes the given string in an HTML-safe way depending on whether the string is used in an
+ * attribute or child position. Taken and adapted from https://github.com/ryansolid/dom-expressions
+ * (MIT license).
  */
 export function escapeString(str: string, isAttribute: boolean): string {
     const delimiter = isAttribute ? '"' : "<";

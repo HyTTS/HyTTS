@@ -5,7 +5,10 @@
 
 /** @type {import('jest').Config} */
 module.exports = {
-    moduleNameMapper: { "@/(.*)": "<rootDir>/source/$1" },
+    moduleNameMapper: {
+        "@/(.*)": "<rootDir>/source/$1",
+        "\\$/(.*)": "<rootDir>/source/browser/$1",
+    },
     roots: ["./source"],
     setupFilesAfterEnv: ["./jest.setup.ts"],
     testEnvironment: "node",
