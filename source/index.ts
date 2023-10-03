@@ -6,6 +6,7 @@ export {
     createBrowserFunc,
     createBrowserScript,
     createEventHandler,
+    useRegisterBrowserEventHandler,
     useRegisterBrowserScript,
 } from "@/jsx/browser-script";
 

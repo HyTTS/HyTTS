@@ -168,5 +168,5 @@ const voidElements = new Set<string>([
     "wbr",
 ]);
 
-const browserEventPrefix = "browser:";
+const browserEventPrefix = "browser:on";
 const browserEventPrefixLength = browserEventPrefix.length;

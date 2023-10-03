@@ -66,7 +66,7 @@ export function BrowserScriptRenderer(props: PropsWithChildren) {
         // Generates names for JavaScript variables that are unique within this script renderer.
         const generateName = (() => {
             let index = 0;
-            return () => `_${index++}`;
+            return () => `$f${index++}`;
         })();
 
         // We deduplicate functions based on the string representation of their code. This avoids
@@ -175,7 +175,7 @@ export function useRegisterBrowserEventHandler(
         [browserScriptSymbol]: null,
         hasContext: false,
         serializeScript: (registerFunction) => ({
-            script: `document.getElementById("${id}").${eventName}=${registerFunction(handler)}`,
+            script: `hy.addEventListener("${id}", "${eventName}", ${registerFunction(handler)})`,
             context: "",
         }),
     });

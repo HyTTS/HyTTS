@@ -1,3 +1,4 @@
+import { removeEventListeners } from "$/events.browser";
 import { log } from "$/log.browser";
 
 /**
@@ -40,6 +41,7 @@ function reconcileNode<T extends Node | Element>(currentNode: T, newNode: T): T 
 }
 
 function reconcileElement(currentElement: Element, newElement: Element) {
+    removeEventListeners(currentElement);
     reconcileAttributes(currentElement, newElement);
 
     const hasChildren = currentElement.firstChild ?? newElement.firstChild;

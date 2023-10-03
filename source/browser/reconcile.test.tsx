@@ -1,5 +1,6 @@
 /** @jest-environment jsdom */
 
+import { addEventListener } from "@/browser/events.browser";
 import { reconcile } from "@/browser/reconcile.browser";
 
 document.head.append(create("meta", { name: "hy-csp-nonce", content: "test" }));
@@ -97,6 +98,88 @@ describe("reconcile", () => {
             });
 
             it.todo("merges styles");
+        });
+    });
+
+    describe("events", () => {
+        it("removes single HyTTS-registered event listener on reconciliation", () => {
+            let invoked = 0;
+
+            const div1 = create("div", { id: "x" });
+            const div2 = create("div", { id: "x" });
+
+            jest.spyOn(document, "getElementById").mockReturnValue(div1);
+            addEventListener("x", "click", () => invoked++);
+
+            div1.dispatchEvent(new Event("click"));
+            expect(invoked).toBe(1);
+
+            expect(reconcile(div1, div2)).toBe(div1);
+
+            div1.dispatchEvent(new Event("click"));
+            expect(invoked).toBe(1);
+        });
+
+        it("removes multiple HyTTS-registered event listeners on reconciliation", () => {
+            let invoked1 = 0;
+            let invoked2 = 0;
+
+            const div1 = create("div", { id: "x" });
+            const div2 = create("div", { id: "x" });
+
+            jest.spyOn(document, "getElementById").mockReturnValue(div1);
+            addEventListener("x", "click", () => invoked1++);
+            addEventListener("x", "click", () => invoked2++);
+
+            div1.dispatchEvent(new Event("click"));
+            expect(invoked1).toBe(1);
+            expect(invoked2).toBe(1);
+
+            expect(reconcile(div1, div2)).toBe(div1);
+
+            div1.dispatchEvent(new Event("click"));
+            expect(invoked1).toBe(1);
+            expect(invoked2).toBe(1);
+        });
+
+        it("keeps non-HyTTS-registered event listeners on reconciliation", () => {
+            let invoked1 = 0;
+            let invoked2 = 0;
+
+            const div1 = create("div", { id: "x" });
+            const div2 = create("div", { id: "x" });
+
+            jest.spyOn(document, "getElementById").mockReturnValue(div1);
+            addEventListener("x", "click", () => invoked1++);
+            document.getElementById("x")?.addEventListener("click", () => invoked2++);
+
+            div1.dispatchEvent(new Event("click"));
+            expect(invoked1).toBe(1);
+            expect(invoked2).toBe(1);
+
+            expect(reconcile(div1, div2)).toBe(div1);
+
+            div1.dispatchEvent(new Event("click"));
+            expect(invoked1).toBe(1);
+            expect(invoked2).toBe(2);
+        });
+
+        it("allows explicit event listener removal with abort controller", () => {
+            let invoked = 0;
+            const abortController = new AbortController();
+
+            const div = create("div", { id: "x" });
+
+            jest.spyOn(document, "getElementById").mockReturnValue(div);
+            addEventListener("x", "click", () => invoked++, { signal: abortController.signal });
+
+            div.dispatchEvent(new Event("click"));
+            expect(invoked).toBe(1);
+
+            abortController.abort();
+
+            div.dispatchEvent(new Event("click"));
+            expect(invoked).toBe(1);
         });
     });
 
