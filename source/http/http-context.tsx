@@ -55,7 +55,7 @@ export function HttpResponse(
         >
             <ErrorBoundary ErrorView={InternalServerError}>
                 <CspNonceProvider value={randomBytes(32).toString("base64")}>
-                    <UniqueNameProvider prefix="root">{props.children}</UniqueNameProvider>
+                    <UniqueNameProvider namespace="root">{props.children}</UniqueNameProvider>
                 </CspNonceProvider>
             </ErrorBoundary>
         </httpContext.Provider>

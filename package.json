@@ -1,15 +1,16 @@
 {
     "name": "@hytts/hytts",
-    "version": "0.2.0",
+    "version": "0.2.12",
     "author": "Axel Habermaier",
     "license": "MIT",
     "homepage": "https://github.com/HyTTS/HyTTS",
-    "description": "HyTTS (pronounced 'heights') is a framework for server-side rendered web apps, inspired by React, Turbo, and htmx.",
+    "description": "HyTTS (pronounced \"heights\") is a JSX-based full-stack framework with end-to-end type safety for server-side rendered web apps, inspired Turbo and htmx. ",
     "keywords": [
         "TypeScript",
         "HyTTS",
         "server-side rendering",
-        "JSX"
+        "JSX",
+        "type-safety"
     ],
     "repository": {
         "type": "git",

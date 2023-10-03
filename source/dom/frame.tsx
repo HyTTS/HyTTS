@@ -35,7 +35,7 @@ export function createFrame(frameId: string): Frame {
         return (
             <hy-frame id={frameId} class={props.class}>
                 <frameContext.Provider value={frame}>
-                    <UniqueNameProvider prefix={frameId}>
+                    <UniqueNameProvider namespace={frameId}>
                         <BrowserScriptRenderer>{props.children}</BrowserScriptRenderer>
                     </UniqueNameProvider>
                 </frameContext.Provider>

@@ -15,6 +15,7 @@ export {
     type ContextProviderProps,
     createContext,
     useContext,
+    useContextOrDefault,
 } from "@/jsx/context";
 
 export { useCspNonce, CspNonce } from "@/jsx/csp-nonce";

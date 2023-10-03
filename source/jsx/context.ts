@@ -52,9 +52,30 @@ export function createContext<T>(options?: ContextOptions<T>): Context<T> {
 
 /**
  * Gets the given `context`'s value provided for the calling component with regards to its location
- * in the component tree. If no value is provided, an error is thrown.
+ * in the component tree. If no context value is provided by some ancestor component and the context
+ * defines no default value, an error is thrown.
  */
 export function useContext<T>(context: Context<T>): T {
+    const symbol = Symbol();
+    const value = useContextOrDefault(context, symbol);
+
+    if (value === symbol) {
+        throw new Error(
+            `No context named '${
+                context.options?.name ?? "[unnamed context]"
+            }' has been set by any ancestor component and the context has no default value.`,
+        );
+    } else {
+        return value;
+    }
+}
+
+/**
+ * Gets the given `context`'s value provided for the calling component with regards to its location
+ * in the component tree. If no context value is provided by some ancestor component and the context
+ * defines no default value, the `fallbackValue` is returned.
+ */
+export function useContextOrDefault<T, U>(context: Context<T>, fallbackValue: U): T | U {
     const store = contextStorage.getStore() ?? {};
     const id = context[contextIdSymbol];
 
@@ -62,11 +83,7 @@ export function useContext<T>(context: Context<T>): T {
         if (context.options?.default) {
             return context.options.default.value;
         } else {
-            throw new Error(
-                `No context named '${
-                    context.options?.name ?? "[unnamed context]"
-                }' has been set by any ancestor component and the context has no default value.`,
-            );
+            return fallbackValue;
         }
     }
 
