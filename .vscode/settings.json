@@ -15,6 +15,7 @@
         "OWASP",
         "reconcilation",
         "subrouter",
+        "typecheck",
         "Zod"
     ]
 }

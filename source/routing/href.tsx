@@ -1,10 +1,10 @@
-import type { FormComponent } from "@/form/form";
 import { type HttpMethod, httpMethods } from "@/http/http-context";
 import type {
+    FormComponent,
     ParamComponent,
     RouteComponent,
-    RouterDefinition,
     RoutesComponent,
+    RoutesDefinition,
 } from "@/routing/router";
 import { toUrlSearchParams } from "@/serialization/url-params";
 
@@ -83,7 +83,12 @@ export function getHrefs<
 
         function replacePathParams(url: string, pathParams: Record<string, unknown> | undefined) {
             Object.entries(pathParams ?? {}).forEach(([key, value]) => {
-                url = url.replaceAll(`:${key}`, encodeURIComponent(`${value}`));
+                const parameter = encodeURIComponent(`${value}`);
+                if (parameter === "") {
+                    throw new Error(`Value required for path parameter '${key}'.`);
+                }
+
+                url = url.replaceAll(`:${key}`, parameter);
             });
 
             return url;
@@ -104,7 +109,7 @@ type CollectRoutesFromRouter<
     : never;
 
 type CollectRoutesFromRouterDefinition<
-    Routes extends RouterDefinition<Routes>,
+    Routes extends RoutesDefinition<Routes>,
     Key extends keyof Routes,
     Path extends string,
     PathParams extends Record<string, any>,

@@ -238,8 +238,6 @@ describe("routing", () => {
         expect(await render(rs, href("GET /params/abc"))).toBe("17");
     });
 
-    it.todo("supports meta objects for routes");
-
     it("supports route params", async () => {
         const rs = routes({
             "GET /component": () => <>component</>,
@@ -347,6 +345,8 @@ describe("routing", () => {
         });
         const href = getHrefs(rs);
 
+        expect(() => href("GET /:n/:s/sn", { n: 1, s: "" })).toThrow("for path parameter 's'.");
+
         expect(href("GET /:n/n-only", { n: 18 }).body).toBeUndefined();
         expect(href("GET /:n/n-only", { n: 18 }).url).toBe("/18/n-only");
         expect(href("GET /:n/n-only", { n: 18 }).method).toBe("GET");
@@ -381,7 +381,7 @@ describe("routing", () => {
 
         expect(await getStatusCode(rs, href("GET /:n/n-only", { n: "ab" } as any))).toBe(400);
         expect(await getStatusCode(rs, href("GET /:n/:s/sn", { s: "s", n: "a" } as any))).toBe(400);
-        expect(await getStatusCode(rs, href("GET /:n/:s/sn", { s: "", n: 1 } as any))).toBe(404);
+        expect(await getStatusCode(rs, { url: "/1//sn", method: "GET" } as Href<"GET">)).toBe(404);
     });
 
     it("supports both path and route params at the same time", async () => {
@@ -666,9 +666,107 @@ describe("routing", () => {
         expect(await render(rs, href("GET /a/b"))).toBe("ab");
         expect(await getStatusCode(rs, href("GET /a/b/c" as any))).toBe(404);
     });
+
+    it("supports meta objects", async () => {
+        const RenderMeta = () => {
+            const { a, b, c, d, e, f } = useMeta();
+            return (
+                <>
+                    {a ?? "-"} {b ?? "-"} {c ?? "-"} {d ?? "-"} {e ?? "-"} {f ?? "-"}
+                </>
+            );
+        };
+
+        const form = createForm("form", z.object({ s: z.string() }), RenderMeta);
+
+        const rs = routes({
+            "GET /outer": RenderMeta,
+            "/nested": meta(
+                routes({
+                    "GET /outer": RenderMeta,
+                    "GET /inner1": meta(RenderMeta, { c: "c1", e: "e1" }),
+                    "GET /inner2": meta(route(z.object({ s: z.string() }), RenderMeta), {
+                        c: "c2",
+                        e: "e2",
+                    }),
+                    "/:p": meta(
+                        param(z.string(), () =>
+                            routes({
+                                "GET /outer": RenderMeta,
+                                "GET /inner1": meta(RenderMeta, { a: "a1", d: "d1", e: "e1" }),
+                                "GET /inner2": meta(
+                                    route(z.object({ s: z.string() }), RenderMeta),
+                                    { b: "b2", c: "c2", d: "d2", e: "e2" },
+                                ),
+                                "POST /form": meta(() => form.updateState((s) => s), {
+                                    b: "bf",
+                                    c: "cf",
+                                }),
+                            }),
+                        ),
+                        { a: "aaa", b: "bbb", c: "ccc" },
+                    ),
+                }),
+                { a: "aa", b: "bb", e: "ee" },
+            ),
+        });
+        const href = getHrefs(rs);
+
+        expect(await render(rs, href("GET /outer"))).toBe("a - - - - f");
+        expect(await render(rs, href("GET /nested/outer"))).toBe("aa bb - - ee f");
+        expect(await render(rs, href("GET /nested/inner1"))).toBe("aa bb c1 - e1 f");
+        expect(await render(rs, href("GET /nested/inner2", { s: "" }))).toBe("aa bb c2 - e2 f");
+        expect(await render(rs, href("GET /nested/:p/outer", { p: "p" }))).toBe(
+            "aaa bbb ccc - ee f",
+        );
+        expect(await render(rs, href("GET /nested/:p/inner1", { p: "p" }))).toBe(
+            "a1 bbb ccc d1 e1 f",
+        );
+        expect(await render(rs, href("GET /nested/:p/inner2", { p: "p" }, { s: "" }))).toBe(
+            "aaa b2 c2 d2 e2 f",
+        );
+        expect(await render(rs, { ...href("POST /nested/:p/form", { p: "p" }), body: "s=a" })).toBe(
+            '<hy-frame id="f_form">aaa bf cf - ee f</hy-frame>',
+        );
+    });
+
+    it("supports async meta functions", async () => {
+        type Meta = { a?: string; b?: string; c?: string };
+        const { routes, meta, useMeta } = createRouter<Meta>(() =>
+            Promise.resolve({ a: "a", b: "b", c: "c" }),
+        );
+
+        const RenderMeta = () => {
+            const { a, b, c } = useMeta();
+            return (
+                <>
+                    {a} {b} {c}
+                </>
+            );
+        };
+
+        const rs = meta(
+            routes({
+                "GET /meta": meta(RenderMeta, () => Promise.resolve({ b: "bb" })),
+            }),
+            () => Promise.resolve({ a: "aa" }),
+        );
+        const href = getHrefs(rs);
+
+        expect(await render(rs, href("GET /meta"))).toBe("aa bb c");
+    });
 });
 
-const { lazy, param, route, routes } = createRouter({});
+type Meta = {
+    readonly a?: string;
+    readonly b?: string;
+    readonly c?: string;
+    readonly d?: string;
+    readonly e?: string;
+    readonly f?: string;
+};
+
+const { lazy, param, route, routes, meta, useMeta } = createRouter<Meta>({ a: "a", f: "f" });
 
 async function render(routes: RoutesComponent<any>, href: Href<any, any>) {
     const { html } = await renderWithStatusCode(routes, href);

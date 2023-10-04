@@ -5,21 +5,11 @@ import { collectPath, type PropertySelector } from "@/form/property-path";
 import { useHttpContext, useHttpStatusCode } from "@/http/http-context";
 import { createEventHandler } from "@/jsx/browser-script";
 import { createContext, useContext } from "@/jsx/context";
-import type { JSX, JsxComponent, JsxElement } from "@/jsx/jsx-types";
+import type { JSX, JsxComponent } from "@/jsx/jsx-types";
 import type { FormValues, Href } from "@/routing/href";
+import type { FormElement } from "@/routing/router";
 import { toPartialSchema, type ToPartialSchema } from "@/serialization/to-partial-schema";
 import { parseUrlSearchParams } from "@/serialization/url-params";
-
-const formSymbol = Symbol();
-
-export type FormElement<FormValues extends Record<string, unknown>> = JsxElement & {
-    // Always `undefined` at runtime and only used at the type-level to infer the type of
-    // the form values of an `Href`.
-    readonly [formSymbol]: FormValues | undefined;
-};
-
-export type FormComponent<FormValues extends Record<string, unknown>> =
-    () => FormElement<FormValues>;
 
 export type SomeFormSchema = ZodType<Record<string, unknown>, ZodTypeDef, any>;
 

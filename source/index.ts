@@ -95,11 +95,14 @@ export { type AProps, type ButtonProps, A, Button } from "@/dom/links";
 export { type BodyProps, Body, BodyFrame } from "@/dom/body";
 
 export {
+    type FormComponent,
+    type FormElement,
     type ParamComponent,
+    type Provide,
     type RouteComponent,
-    type RoutesComponent as RouterComponent,
-    type RouterDefinition,
+    type RoutesDefinition as RouterDefinition,
     type RouterProps,
+    type RoutesComponent,
     type RoutingComponent,
     createRouter,
     Router,
@@ -109,9 +112,7 @@ export { type Href, type HrefCreator, type FormValues, getHrefs, isHref } from "
 
 export {
     type FormButtonProps,
-    type FormComponent,
     type FormContentProps,
-    type FormElement,
     type FormProps,
     type SomeFormSchema,
     createForm,

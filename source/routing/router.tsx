@@ -1,13 +1,14 @@
-import { z, ZodType } from "zod";
-import type { FormComponent } from "@/form/form";
+import cloneDeep from "lodash/cloneDeep";
+import merge from "lodash/merge";
+import { z, type ZodType } from "zod";
 import { type HttpMethod, httpMethods, useHttpContext } from "@/http/http-context";
 import { HttpError } from "@/http/http-error";
 import { createContext, useContext } from "@/jsx/context";
-import type { JsxComponent, PropsWithChildren } from "@/jsx/jsx-types";
+import type { JsxComponent, JsxElement, PropsWithChildren } from "@/jsx/jsx-types";
 import { unpack } from "@/serialization/data-packing";
 import { parseUrlSearchParams } from "@/serialization/url-params";
 
-export type RouterDefinition<T extends Record<string, unknown>> = {
+export type RoutesDefinition<T extends Record<string, unknown>> = {
     readonly [Key in keyof T & string]: Key extends `${string}/${string}/${string}`
         ? "ERROR: Path segments cannot contain slashes except at the start."
         : Key extends `${`${HttpMethod} ` | ""}/${string} ${string}`
@@ -30,34 +31,47 @@ export type RouterDefinition<T extends Record<string, unknown>> = {
 const routesSymbol = Symbol();
 const routeSymbol = Symbol();
 const paramSymbol = Symbol();
+const formSymbol = Symbol();
 
 export type RoutingComponent = JsxComponent<{
     readonly parent: JsxComponent<PropsWithChildren>;
     readonly pathSegments: string[];
+    readonly meta: Record<string, unknown>;
 }>;
 
-export type RoutesComponent<Def extends RouterDefinition<Def>> = RoutingComponent & {
-    [routesSymbol]: Def | undefined;
+export type RoutesComponent<Def extends RoutesDefinition<Def>> = RoutingComponent & {
+    readonly [routesSymbol]: Def | undefined;
+    readonly kind: typeof routesSymbol;
 };
 
 export type RouteComponent<
     Params extends Record<string, unknown>,
     FormState extends Record<string, unknown>,
 > = RoutingComponent & {
-    [routeSymbol]: [Params, FormState] | undefined;
+    readonly [routeSymbol]: [Params, FormState] | undefined;
+    readonly kind: typeof routeSymbol;
 };
+
+export type ParamComponent<PathParam, Routes extends RoutesComponent<any>> = RoutingComponent & {
+    readonly [paramSymbol]: [PathParam, Routes] | undefined;
+    readonly kind: typeof paramSymbol;
+};
+
+export type FormElement<FormValues extends Record<string, unknown>> = JsxElement & {
+    // Always `undefined` at runtime and only used at the type-level to infer the type of
+    // the form values of an `Href`.
+    readonly [formSymbol]: FormValues | undefined;
+};
+
+export type FormComponent<FormValues extends Record<string, unknown>> =
+    () => FormElement<FormValues>;
 
 export type Provide<T> = T | (() => T | Promise<T>);
 
-export type ParamComponent<PathParam, Router extends RoutesComponent<any>> = RoutingComponent & {
-    [paramSymbol]: [PathParam, Router] | undefined;
-};
-
-export function createRouter<Meta extends Record<string, unknown>>(defaultMeta: Meta) {
-    const metaContext = createContext({
-        name: "route meta data",
-        default: { value: defaultMeta },
-    });
+export function createRouter<Meta extends Record<string, unknown>>(
+    defaultMetaProvider: Provide<Meta>,
+) {
+    const metaContext = createContext<Meta>({ name: "route meta data" });
 
     type TypeMap = {
         [routesSymbol]: RoutesComponent<any>;
@@ -67,6 +81,7 @@ export function createRouter<Meta extends Record<string, unknown>>(defaultMeta: 
 
     function tag<T extends keyof TypeMap>(symbol: T, component: RoutingComponent): TypeMap[T] {
         (component as any)[symbol] = undefined;
+        (component as any).kind = symbol;
         return component as TypeMap[T];
     }
 
@@ -74,14 +89,77 @@ export function createRouter<Meta extends Record<string, unknown>>(defaultMeta: 
         return !!value && typeof value === "function" && symbol in value;
     }
 
+    function meta<FormValues extends Record<string, unknown>>(
+        nested: FormComponent<FormValues>,
+        metaProvider: Provide<Meta>,
+    ): FormComponent<FormValues>;
+    function meta<
+        Params extends Record<string, unknown>,
+        FormState extends Record<string, unknown>,
+    >(
+        nested: RouteComponent<Params, FormState>,
+        metaProvider: Provide<Meta>,
+    ): RouteComponent<Params, FormState>;
+    function meta<PathParam, Routes extends RoutesComponent<any>>(
+        nested: ParamComponent<PathParam, Routes>,
+        metaProvider: Provide<Meta>,
+    ): ParamComponent<PathParam, Routes>;
+    function meta<Def extends RoutesDefinition<Def>>(
+        nested: RoutesComponent<Def>,
+        metaProvider: Provide<Meta>,
+    ): RoutesComponent<Def>;
+    function meta(nested: JsxComponent, metaProvider: Provide<Meta>): RouteComponent<{}, {}>;
+    function meta(
+        nested: RoutingComponent | JsxComponent,
+        metaProvider: Provide<Meta>,
+    ): RoutingComponent {
+        let symbol = is(routesSymbol, nested)
+            ? routesSymbol
+            : is(routeSymbol, nested)
+            ? routeSymbol
+            : is(paramSymbol, nested)
+            ? paramSymbol
+            : undefined;
+
+        if (!symbol) {
+            symbol = routeSymbol;
+            nested = self.route(z.any(), nested);
+        }
+
+        return tag(symbol, async ({ parent, meta: parentMeta, pathSegments }) => {
+            const Nested = nested;
+            const meta = typeof metaProvider === "function" ? await metaProvider() : metaProvider;
+
+            return (
+                <Nested
+                    parent={parent}
+                    meta={merge(cloneDeep(parentMeta), meta)}
+                    pathSegments={pathSegments}
+                />
+            );
+        });
+    }
+
     const self = {
+        /** Gets the meta values of the currently rendered route. */
         useMeta: () => useContext(metaContext),
+
+        /**
+         * Sets meta values for the nested routing component that are available in routes wrappers
+         * higher up the component tree. The meta values are merged together as the routes
+         * definitions are processed, so meta values closer to the current router overwrite meta
+         * values declared higher up the component tree.
+         *
+         * @param nested The nested routing component that is extended with meta values.
+         * @param metaValues The meta values that should be set.
+         */
+        meta,
 
         /**
          * Renders a JSX component on a route match.
          *
-         * @param schemaOrMetaProvider The schema for the route's search or body parameter,
-         *   depending on the route's HTTP method.
+         * @param schemaProvider The schema for the route's search or body parameter, depending on
+         *   the route's HTTP method.
          * @param Handler The JSX component that renders the route's HTML output.
          */
         route: <
@@ -89,13 +167,10 @@ export function createRouter<Meta extends Record<string, unknown>>(defaultMeta: 
             ParamsOut extends Record<string, unknown> = {},
             FormValues extends Record<string, unknown> = {},
         >(
-            schemaOrMetaProvider: Provide<
-                | ZodType<ParamsOut, any, ParamsIn>
-                | (Meta & { paramsSchema?: ZodType<ParamsOut, any, ParamsIn> })
-            >,
+            schemaProvider: Provide<ZodType<ParamsOut, any, ParamsIn>>,
             Handler: JsxComponent<ParamsOut> | FormComponent<FormValues>,
         ): RouteComponent<ParamsIn, FormValues> =>
-            tag(routeSymbol, async ({ parent: Parent, pathSegments }) => {
+            tag(routeSymbol, async ({ parent: Parent, pathSegments, meta }) => {
                 const { method, searchParams, requestBody } = useHttpContext();
                 if (pathSegments.length !== 0) {
                     throw new HttpError(
@@ -106,21 +181,19 @@ export function createRouter<Meta extends Record<string, unknown>>(defaultMeta: 
                     );
                 }
 
-                const schemaOrMeta =
-                    typeof schemaOrMetaProvider === "function"
-                        ? await schemaOrMetaProvider()
-                        : schemaOrMetaProvider;
+                const schema =
+                    typeof schemaProvider === "function" ? await schemaProvider() : schemaProvider;
 
-                const hasMeta = !(schemaOrMeta instanceof ZodType);
-                const paramsSchema = hasMeta ? schemaOrMeta.paramsSchema : schemaOrMeta;
+                const defaultMeta =
+                    typeof defaultMetaProvider === "function"
+                        ? await defaultMetaProvider()
+                        : defaultMetaProvider;
 
                 const paramsSource = method === "GET" ? searchParams : requestBody;
-                const params = parseUrlSearchParams(paramsSchema, paramsSource);
+                const params = parseUrlSearchParams(schema, paramsSource);
 
                 return (
-                    <metaContext.Provider
-                        value={hasMeta ? { ...defaultMeta, ...schemaOrMeta } : { ...defaultMeta }}
-                    >
+                    <metaContext.Provider value={merge(cloneDeep(defaultMeta), meta)}>
                         <Parent>
                             <Handler {...params} />
                         </Parent>
@@ -154,7 +227,7 @@ export function createRouter<Meta extends Record<string, unknown>>(defaultMeta: 
          *   gets the JSX contents of the rendered route as the `children` prop, which must be
          *   rendered by the wrapper somewhere.
          */
-        routes: <Def extends RouterDefinition<Def>>(
+        routes: <Def extends RoutesDefinition<Def>>(
             def: Def,
             wrapper?: JsxComponent<PropsWithChildren>,
         ): RoutesComponent<Def> => {
@@ -273,7 +346,7 @@ export function createRouter<Meta extends Record<string, unknown>>(defaultMeta: 
 
             const Wrapper = wrapper ?? (({ children }: PropsWithChildren) => <>{children}</>);
 
-            return tag(routesSymbol, ({ parent: Parent, pathSegments }) => {
+            return tag(routesSymbol, ({ parent: Parent, pathSegments, meta }) => {
                 const httpContext = useHttpContext();
                 let remainingPathSegments = pathSegments;
                 let Component: RoutingComponent | undefined = lookup[httpContext.method].get(
@@ -291,6 +364,7 @@ export function createRouter<Meta extends Record<string, unknown>>(defaultMeta: 
                 return (
                     <Component
                         pathSegments={remainingPathSegments}
+                        meta={meta}
                         parent={({ children }) => (
                             <Parent>
                                 <Wrapper>{children}</Wrapper>
@@ -318,14 +392,18 @@ export function createRouter<Meta extends Record<string, unknown>>(defaultMeta: 
             const paramContext = createContext<PathParamOut>({ name: "path parameter" });
             const Component = nestedRoutes(() => useContext(paramContext));
 
-            return tag(paramSymbol, async ({ parent, pathSegments }) => {
+            return tag(paramSymbol, async ({ parent, pathSegments, meta }) => {
                 const paramSchema =
                     typeof schemaProvider === "function" ? await schemaProvider() : schemaProvider;
                 const param = unpack(paramSchema, decodeURIComponent(pathSegments[0] ?? ""))!;
 
                 return (
                     <paramContext.Provider value={param}>
-                        <Component pathSegments={pathSegments.slice(1)} parent={parent} />
+                        <Component
+                            pathSegments={pathSegments.slice(1)}
+                            parent={parent}
+                            meta={meta}
+                        />
                     </paramContext.Provider>
                 );
             });
@@ -350,13 +428,13 @@ export function createRouter<Meta extends Record<string, unknown>>(defaultMeta: 
         ): T extends RoutesComponent<any> ? T : ReturnType<T> => {
             let Component: RoutesComponent<any> | undefined = undefined;
 
-            return tag(routesSymbol, async ({ parent, pathSegments }) => {
+            return tag(routesSymbol, async ({ parent, pathSegments, meta }) => {
                 if (!Component) {
                     const imported = (await loadModule()).default;
                     Component = is(routesSymbol, imported) ? imported : imported(...params);
                 }
 
-                return <Component pathSegments={pathSegments} parent={parent} />;
+                return <Component pathSegments={pathSegments} parent={parent} meta={meta} />;
             }) as any;
         },
     };
@@ -370,8 +448,10 @@ export type RouterProps<Routes extends RoutesComponent<any>> = {
 
 /** A router that determines the route that should be rendered based on the current HTTP request. */
 export function Router<Routes extends RoutesComponent<any>>({
-    routes: Router,
+    routes: Routes,
 }: RouterProps<Routes>) {
     const { requestPath } = useHttpContext();
-    return <Router pathSegments={requestPath} parent={({ children }) => <>{children}</>} />;
+    return (
+        <Routes pathSegments={requestPath} parent={({ children }) => <>{children}</>} meta={{}} />
+    );
 }
