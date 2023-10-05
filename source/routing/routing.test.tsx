@@ -311,11 +311,21 @@ describe("routing", () => {
         // @ts-expect-error
         href("POST /body", { s: "test", n: "17" });
 
-        expect(await getStatusCode(rs, href("POST /body", { n: 17 } as any))).toBe(400);
-        expect(await getStatusCode(rs, href("GET /search", { n: 17 } as any))).toBe(400);
+        await expect(() => render(rs, href("POST /body", { n: 17 } as any))).rejects.toThrow(
+            "BadRequest",
+        );
 
-        expect(await getStatusCode(rs, href("POST /body", { s: "", n: "b" } as any))).toBe(400);
-        expect(await getStatusCode(rs, href("GET /search", { s: "", n: "a" } as any))).toBe(400);
+        await expect(() => render(rs, href("GET /search", { n: 17 } as any))).rejects.toThrow(
+            "BadRequest",
+        );
+
+        await expect(() =>
+            render(rs, href("POST /body", { s: "", n: "b" } as any)),
+        ).rejects.toThrow("BadRequest");
+
+        await expect(() =>
+            render(rs, href("GET /search", { s: "", n: "a" } as any)),
+        ).rejects.toThrow("BadRequest");
     });
 
     it("supports (nested) path params", async () => {
@@ -379,9 +389,17 @@ describe("routing", () => {
         // @ts-expect-error
         href("GET /:n/:s/sn", { n: "17" });
 
-        expect(await getStatusCode(rs, href("GET /:n/n-only", { n: "ab" } as any))).toBe(400);
-        expect(await getStatusCode(rs, href("GET /:n/:s/sn", { s: "s", n: "a" } as any))).toBe(400);
-        expect(await getStatusCode(rs, { url: "/1//sn", method: "GET" } as Href<"GET">)).toBe(404);
+        await expect(() => render(rs, href("GET /:n/n-only", { n: "ab" } as any))).rejects.toThrow(
+            "BadRequest",
+        );
+
+        await expect(() =>
+            render(rs, href("GET /:n/:s/sn", { s: "s", n: "a" } as any)),
+        ).rejects.toThrow("BadRequest");
+
+        await expect(() =>
+            render(rs, { url: "/1//sn", method: "GET" } as Href<"GET">),
+        ).rejects.toThrow("NotFound");
     });
 
     it("supports both path and route params at the same time", async () => {
@@ -519,7 +537,7 @@ describe("routing", () => {
         const href = getHrefs(rs);
 
         expect(await render(rs, href("GET /", { s: "test?" }))).toBe("test?");
-        expect(await getStatusCode(rs, href("GET /", { s: "" }))).toBe(400);
+        await expect(() => render(rs, href("GET /", { s: "" }))).rejects.toThrow("BadRequest");
     });
 
     it("supports intersected schemas for route params", async () => {
@@ -617,7 +635,7 @@ describe("routing", () => {
         expect(href("POST /").url).toBe("/");
         expect(href("POST /").method).toBe("POST");
         expect(href("POST /").form).toBeUndefined();
-        expect(await getStatusCode(rs, href("POST /"))).toBe(400);
+        await expect(() => render(rs, href("POST /"))).rejects.toThrow("BadRequest");
         expect(await render(rs, { ...href("POST /"), body: "s=abc&n=17" })).toBe(
             '<hy-frame id="f_form">abc 17</hy-frame>',
         );
@@ -664,7 +682,7 @@ describe("routing", () => {
         const href = getHrefs(rs);
 
         expect(await render(rs, href("GET /a/b"))).toBe("ab");
-        expect(await getStatusCode(rs, href("GET /a/b/c" as any))).toBe(404);
+        await expect(() => render(rs, href("GET /a/b/c" as any))).rejects.toThrow("NotFound");
     });
 
     it("supports meta objects", async () => {
@@ -755,6 +773,18 @@ describe("routing", () => {
 
         expect(await render(rs, href("GET /meta"))).toBe("aa bb c");
     });
+
+    it("disallows non-GET requests from the browser", async () => {
+        const rs = routes({
+            "POST /p": () => <>test</>,
+        });
+        const href = getHrefs(rs);
+
+        expect(await render(rs, href("POST /p"))).toBe("test");
+        await expect(() => render(rs, href("POST /p"), () => undefined)).rejects.toThrow(
+            "BadRequest",
+        );
+    });
 });
 
 type Meta = {
@@ -768,30 +798,30 @@ type Meta = {
 
 const { lazy, param, route, routes, meta, useMeta } = createRouter<Meta>({ a: "a", f: "f" });
 
-async function render(routes: RoutesComponent<any>, href: Href<any, any>) {
-    const { html } = await renderWithStatusCode(routes, href);
+async function render(
+    routes: RoutesComponent<any>,
+    href: Href<any, any>,
+    getHeader?: (header: string) => string | undefined,
+) {
+    const { html } = await executeRouter(routes, href, getHeader);
     return html;
 }
 
-async function getStatusCode(routes: RoutesComponent<any>, href: Href<any, any>) {
-    const { statusCode } = await renderWithStatusCode(routes, href);
-    return statusCode;
-}
-
 async function getRedirectUrl(routes: RoutesComponent<any>, href: Href<any, any>) {
-    const { redirectUrl } = await renderWithStatusCode(routes, href);
+    const { redirectUrl } = await executeRouter(routes, href);
     return redirectUrl;
 }
 
-async function renderWithStatusCode(routes: RoutesComponent<any>, href: Href<any, any>) {
+async function executeRouter(
+    routes: RoutesComponent<any>,
+    href: Href<any, any>,
+    getHeader: (header: string) => string | undefined = (name) =>
+        name === "x-hy" ? "true" : undefined,
+) {
     const url = new URL(href.url, "http://example.com");
-    let statusCode = 200;
     let redirectUrl = "";
 
     return {
-        get statusCode() {
-            return statusCode;
-        },
         get redirectUrl() {
             return redirectUrl;
         },
@@ -803,10 +833,11 @@ async function renderWithStatusCode(routes: RoutesComponent<any>, href: Href<any
                     searchParams: url.search,
                     requestBody: href.body ?? "",
                     redirect: (url) => (redirectUrl = url),
+                    getHeader,
                     setHeader: () => {
                         throw new Error("unsupported");
                     },
-                    setStatusCode: (code) => (statusCode = code),
+                    setStatusCode: () => {},
                 }}
             >
                 <Router routes={routes} />

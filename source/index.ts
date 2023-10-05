@@ -68,12 +68,17 @@ export { type ToPartialSchema, toPartialSchema } from "@/serialization/to-partia
 
 export {
     type AbsoluteRedirectProps,
+    type HttpMethod,
     type RedirectProps,
     AbsoluteRedirect,
+    httpMethods,
     Redirect,
     useAbsoluteRedirect,
     useHttpStatusCode,
     useRedirect,
+    useRequestedFrameSelector,
+    useRequester,
+    useRequestHeader,
     useResponseHeader,
     useUrlSearchParams,
 } from "@/http/http-context";

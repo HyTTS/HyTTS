@@ -65,6 +65,20 @@ describe("express-middleware", () => {
                 expect(redirectResponse.status).toBe(201);
             },
         ));
+
+    it("invokes the error callback for fatal errors", () =>
+        runTestApp(
+            routes({
+                "GET /error": () => {
+                    throw new Error("test");
+                },
+            }),
+            async (href, fetch) => {
+                const response = await fetch(href("GET /error"));
+                expect(await response.text()).toBe("fatal-error-callback: Error: test");
+                expect(response.status).toBe(500);
+            },
+        ));
 });
 
 const { routes, route, param } = createRouter({});

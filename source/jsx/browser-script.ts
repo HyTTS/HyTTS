@@ -66,7 +66,7 @@ export function BrowserScriptRenderer(props: PropsWithChildren) {
         // Generates names for JavaScript variables that are unique within this script renderer.
         const generateName = (() => {
             let index = 0;
-            return () => `$f${index++}`;
+            return () => `$${index++}`;
         })();
 
         // We deduplicate functions based on the string representation of their code. This avoids

@@ -3,6 +3,9 @@ import {
     AbsoluteRedirect,
     Redirect,
     useHttpStatusCode,
+    useRequestedFrameSelector,
+    useRequester,
+    useRequestHeader,
     useResponseHeader,
     useUrlSearchParams,
 } from "@/http/http-context";
@@ -50,12 +53,12 @@ describe("http-context", () => {
             },
         ));
 
-    it("supports setting HTTP headers", () =>
+    it("supports getting and setting HTTP headers", () =>
         runTestApp(
             routes({
                 "GET /single": () => {
                     useResponseHeader("x-test", "1");
-                    return <></>;
+                    return <>{useRequestHeader("test")}</>;
                 },
                 "GET /multiple": () => {
                     useResponseHeader("x-test1", "1");
@@ -69,8 +72,9 @@ describe("http-context", () => {
                 },
             }),
             async (href, fetch) => {
-                const singleResponse = await fetch(href("GET /single"));
+                const singleResponse = await fetch(href("GET /single"), { test: "abc" });
                 expect(singleResponse.headers.get("x-test")).toBe("1");
+                expect(await singleResponse.text()).toBe("abc");
 
                 const multipleResponse = await fetch(href("GET /multiple"));
                 expect(multipleResponse.headers.get("x-test1")).toBe("1");
@@ -114,6 +118,40 @@ describe("http-context", () => {
             async (href, fetch) => {
                 const singleResponse = await fetch(href("GET /single", { x: "test" }));
                 expect(await singleResponse.text()).toBe("test");
+            },
+        ));
+
+    it("distinguishes between requests originating from the browser or HyTTS", () =>
+        runTestApp(
+            routes({
+                "GET /single": () => {
+                    return <>{useRequester()}</>;
+                },
+            }),
+            async (href, fetch) => {
+                const browserResponse = await fetch(href("GET /single"));
+                expect(await browserResponse.text()).toBe("browser");
+
+                const hyResponse = await fetch(href("GET /single"), { "x-hy": "true" });
+                expect(await hyResponse.text()).toBe("HyTTS");
+            },
+        ));
+
+    it("returns the frame selector of the current request", () =>
+        runTestApp(
+            routes({
+                "GET /single": () => {
+                    return <>{useRequestedFrameSelector() ?? "-"}</>;
+                },
+            }),
+            async (href, fetch) => {
+                const browserResponse = await fetch(href("GET /single"), {
+                    "x-hy-frame-selector": "test",
+                });
+                expect(await browserResponse.text()).toBe("test");
+
+                const hyResponse = await fetch(href("GET /single"));
+                expect(await hyResponse.text()).toBe("-");
             },
         ));
 });

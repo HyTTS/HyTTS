@@ -45,24 +45,33 @@ export function runTestApp<T extends RoutesComponent<any>>(
     routes: T,
     useApp: (
         href: HrefCreator<T>,
-        fetch: (href: Href<any, any>) => Promise<Response>,
+        fetch: (href: Href<any, any>, headers?: HeadersInit) => Promise<Response>,
     ) => Promise<void>,
 ) {
     const app = express();
     app.set("query parser", (queryString: string) => queryString);
     app.use(text({ type: "application/x-www-form-urlencoded" }));
-    app.use(createExpressMiddleware(<Router routes={routes} />, (error) => `fatal: ${error}`));
+    app.use(
+        createExpressMiddleware(
+            <Router routes={routes} />,
+            (error) => `fatal-error-callback: ${error}`,
+        ),
+    );
 
     return testApp(app, (fetch) =>
-        useApp(getHrefs(routes), (href) =>
+        useApp(getHrefs(routes), (href, headers) =>
             fetch(
                 href.url,
                 href.method === "GET"
-                    ? {}
+                    ? { headers }
                     : {
                           method: "POST",
                           body: href.body,
-                          headers: { "content-type": "application/x-www-form-urlencoded" },
+                          headers: {
+                              ...headers,
+                              ...(headers ? {} : { "x-hy": "true" }),
+                              "content-type": "application/x-www-form-urlencoded",
+                          },
                       },
             ),
         ),

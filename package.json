@@ -32,7 +32,7 @@
         "build": "rm -rf ./dist && mkdir ./dist && yarn concurrently --names srv,brw,cpy \"yarn build:server\" \"yarn build:browser\" \"yarn build:files\" && yarn build:format",
         "publish:local": "yarn build && cd ./dist && npm pack --pack-destination ../tmp",
         "format:check": "prettier --check ./source",
-        "format:fix": "prettier --write --loglevel warn ./source",
+        "format:fix": "prettier --write --log-level warn ./source",
         "lint": "eslint ./ --max-warnings 0",
         "test:debug": "node --inspect=0.0.0.0:4106 node_modules/.bin/jest --runInBand --watch",
         "test:run": "yarn jest",

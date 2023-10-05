@@ -22,6 +22,7 @@ type HttpContext = {
     readonly searchParams: string;
     readonly requestBody: string;
     readonly redirect: (url: string) => void;
+    readonly getHeader: (header: string) => string | undefined;
     readonly setHeader: (header: string, value: string) => void;
     readonly setStatusCode: (code: number) => void;
 };
@@ -53,41 +54,11 @@ export function HttpResponse(
                 requestPath: props.value.requestPath.filter((segment) => segment !== ""),
             }}
         >
-            <ErrorBoundary ErrorView={InternalServerError}>
-                <CspNonceProvider value={randomBytes(32).toString("base64")}>
-                    <UniqueNameProvider namespace="root">{props.children}</UniqueNameProvider>
-                </CspNonceProvider>
-            </ErrorBoundary>
+            <CspNonceProvider value={randomBytes(32).toString("base64")}>
+                <UniqueNameProvider namespace="root">{props.children}</UniqueNameProvider>
+            </CspNonceProvider>
         </httpContext.Provider>
     );
-
-    function InternalServerError({ error }: ErrorViewProps) {
-        useHttpStatusCode(toHttpStatusCode(error));
-        log.error(`${error}`);
-
-        return (
-            <html lang="en">
-                <head>
-                    <meta charset="utf-8" />
-                    <title>Error</title>
-                </head>
-                <body>
-                    <h1>Error</h1>
-                    <p>
-                        An error occurred while rendering the JSX. Add a top-level{" "}
-                        <code>ErrorBoundary</code> above your <code>Router</code> in your JSX
-                        component hierarchy to catch all errors that occur during rendering.
-                    </p>
-
-                    <p>
-                        Make sure that your top-level <code>ErrorBoundary</code> never throws an
-                        error when it is rendered. Otherwise, HyTTS will fall back to a static, more
-                        generic error message that might not be as helpful to your users.
-                    </p>
-                </body>
-            </html>
-        );
-    }
 }
 
 /**
@@ -99,6 +70,11 @@ export function HttpResponse(
  */
 export function useResponseHeader(name: string, value: string) {
     useHttpContext().setHeader(name, value);
+}
+
+/** Retrieves the value of the current request's HTTP header called `name`. */
+export function useRequestHeader(name: string) {
+    return useHttpContext().getHeader(name);
 }
 
 /**
@@ -185,4 +161,21 @@ export function AbsoluteRedirect(props: AbsoluteRedirectProps): JsxElement {
 function isRelativeUrl(url: string) {
     const origin = "https://example.com";
     return new URL(url, origin).origin === origin;
+}
+
+/**
+ * Checks the current HTTP request's `x-hy` header to determine if the request originates from a
+ * browser navigation, e.g., on the first request to the application, or from HyTTS, for instance
+ * during a frame navigation or a form submission.
+ */
+export function useRequester() {
+    return useContext(httpContext).getHeader("x-hy") ? "HyTTS" : "browser";
+}
+
+/**
+ * Checks the current HTTP request's 'x-hy-frame-selector' header to determine the selector of the
+ * frame that is updated with the response HTML.
+ */
+export function useRequestedFrameSelector() {
+    return useContext(httpContext).getHeader("x-hy-frame-selector");
 }

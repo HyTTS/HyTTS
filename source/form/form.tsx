@@ -15,7 +15,7 @@ export type SomeFormSchema = ZodType<Record<string, unknown>, ZodTypeDef, any>;
 
 export type FormProps<FormState extends Record<string, unknown>> = Omit<
     JSX.FormHTMLAttributes<HTMLFormElement>,
-    "id" | "browser:onsubmit" | "browser:onchange" | "method"
+    "id" | "browser:onsubmit" | "browser:onchange" | "method" | "action"
 > & {
     /**
      * A reference to the POST route that handles the form's submission. Used regardless of whether
@@ -47,24 +47,26 @@ export function Form<FormStateSchema extends SomeFormSchema>({
         <form
             {...props}
             id={formId}
-            browser:onsubmit={createEventHandler(
-                (_formId, _url, _frameSelector) => (e) => {
-                    e.preventDefault();
-                    // TODO await HyTTS.submitForm(formId, url, frameId);
-                },
-                formId,
-                onSubmit.url,
-                target?.frameSelector,
-            )}
-            browser:onchange={createEventHandler(
-                (_formId, _url, _params) => () => {
-                    // TODO: SET VALIDATE ONLY HEADER IN CASE SUBMIT ROUTE IS USED!
-                    //    return HyTTS.executeFormAction(formId, url, params);
-                },
-                formId,
-                onValidate?.url ?? onSubmit.url,
-                "", // TODO toUrlSearchParams(validationAction.bodyParams)
-            )}
+            method="post"
+            action={onSubmit.url}
+            // browser:onsubmit={createEventHandler(
+            //     (_formId, _url, _frameSelector) => (e) => {
+            //         e.preventDefault();
+            //         // TODO await HyTTS.submitForm(formId, url, frameId);
+            //     },
+            //     formId,
+            //     onSubmit.url,
+            //     target?.frameSelector,
+            // )}
+            // browser:onchange={createEventHandler(
+            //     (_formId, _url, _params) => () => {
+            //         // TODO: SET VALIDATE ONLY HEADER IN CASE SUBMIT ROUTE IS USED!
+            //         //    return HyTTS.executeFormAction(formId, url, params);
+            //     },
+            //     formId,
+            //     onValidate?.url ?? onSubmit.url,
+            //     "", // TODO toUrlSearchParams(validationAction.bodyParams)
+            // )}
         />
     );
 }

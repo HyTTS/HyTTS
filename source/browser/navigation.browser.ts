@@ -69,7 +69,8 @@ export async function navigateTo({
             signal,
             headers: {
                 // see https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#use-of-custom-request-headers
-                "x-hytts": "true",
+                "x-hy": "true",
+                "x-hy-frame-selector": frameSelector,
                 ...(httpMethod === "GET"
                     ? {}
                     : { "content-type": "application/x-www-form-urlencoded" }),

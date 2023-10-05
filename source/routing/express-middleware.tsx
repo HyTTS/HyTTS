@@ -13,7 +13,7 @@ import type { Router } from "@/routing/router";
  * @param element The JSX element that handles all incoming requests. The contained component tree
  *   should provide:
  *
- *   - A top-level {@link ErrorBoundary} that catches all errors during JSX rendering, and
+ *   - A top-level {@link ErrorBoundary} that catches all errors during JSX rendering.
  *   - A {@link Router} component somewhere within the component tree.
  *
  * @param onFatalError Generates the error HTML that is returned to the browser when a fatal error
@@ -40,9 +40,9 @@ export function createExpressMiddleware(
                             searchParams: getSearchParams(req),
                             requestBody: getRequestBody(req),
                             redirect: (url) => res.redirect(url),
-                            setHeader: (header: string, value: string) =>
-                                res.setHeader(header, value),
-                            setStatusCode: (code: number) => res.status(code),
+                            getHeader: (header) => req.get(header),
+                            setHeader: (header, value) => res.setHeader(header, value),
+                            setStatusCode: (code) => res.status(code),
                         }}
                     >
                         {element}

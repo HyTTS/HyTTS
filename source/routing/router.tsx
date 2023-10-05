@@ -1,7 +1,7 @@
 import cloneDeep from "lodash/cloneDeep";
 import merge from "lodash/merge";
 import { z, type ZodType } from "zod";
-import { type HttpMethod, httpMethods, useHttpContext } from "@/http/http-context";
+import { type HttpMethod, httpMethods, useHttpContext, useRequester } from "@/http/http-context";
 import { HttpError } from "@/http/http-error";
 import { createContext, useContext } from "@/jsx/context";
 import type { JsxComponent, JsxElement, PropsWithChildren } from "@/jsx/jsx-types";
@@ -178,6 +178,13 @@ export function createRouter<Meta extends Record<string, unknown>>(
                         `Unmatched leftover path segments: ${pathSegments
                             .map((s) => `'${s}'`)
                             .join(",")}`,
+                    );
+                }
+
+                if (method !== "GET" && useRequester() !== "HyTTS") {
+                    throw new HttpError(
+                        "BadRequest",
+                        "Non-GET requests originating from the browser are unsupported.",
                     );
                 }
 

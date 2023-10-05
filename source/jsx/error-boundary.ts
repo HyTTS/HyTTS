@@ -23,7 +23,7 @@ export type ErrorBoundaryProps = PropsWithChildren<{
 export function ErrorBoundary(props: ErrorBoundaryProps): JsxElement {
     return toJsxExpression(async () => {
         try {
-            return await renderChildren(props.children, "", "");
+            return await renderChildren(props.children);
         } catch (error: unknown) {
             return (await props.ErrorView({ error }))?.() ?? "";
         }
