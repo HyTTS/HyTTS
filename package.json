@@ -10,7 +10,8 @@
         "HyTTS",
         "server-side rendering",
         "JSX",
-        "type-safety"
+        "type safety",
+        "type-safe routing"
     ],
     "repository": {
         "type": "git",

@@ -1,8 +1,8 @@
 {
     "typescript.tsdk": "node_modules/typescript/lib",
     "typescript.preferences.importModuleSpecifier": "non-relative",
-    "[typescript]": { "editor.codeActionsOnSave": ["source.fixAll.eslint"] },
-    "[typescriptreact]": { "editor.codeActionsOnSave": ["source.fixAll.eslint"] },
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": { "source.fixAll.eslint": true },
     "[json]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
     "cSpell.words": [
         "arrayness",

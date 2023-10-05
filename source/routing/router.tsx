@@ -250,9 +250,7 @@ export function createRouter<Meta extends Record<string, unknown>>(
                     pathSegment.includes("/") ||
                     pathSegment.includes(" ")
                 ) {
-                    throw new Error(
-                        "A parameter definition cannot contain spaces, slashes, or colons.",
-                    );
+                    throw new Error("Invalid space, slash, or colon in path segment.");
                 }
             }
 
