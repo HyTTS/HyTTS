@@ -1,9 +1,8 @@
 import get from "lodash/get";
-import type { z, ZodType, ZodTypeDef } from "zod";
+import { z, type ZodType, type ZodTypeDef } from "zod";
 import { createFrame, type FrameMetadata } from "@/dom/frame";
 import { collectPath, type PropertySelector } from "@/form/property-path";
-import { useHttpContext, useHttpStatusCode } from "@/http/http-context";
-import { createEventHandler } from "@/jsx/browser-script";
+import { useHttpContext, useHttpStatusCode, useRequestHeader } from "@/http/http-context";
 import { createContext, useContext } from "@/jsx/context";
 import type { JSX, JsxComponent } from "@/jsx/jsx-types";
 import type { FormValues, Href } from "@/routing/href";
@@ -15,7 +14,7 @@ export type SomeFormSchema = ZodType<Record<string, unknown>, ZodTypeDef, any>;
 
 export type FormProps<FormState extends Record<string, unknown>> = Omit<
     JSX.FormHTMLAttributes<HTMLFormElement>,
-    "id" | "browser:onsubmit" | "browser:onchange" | "method" | "action"
+    "id" | "method" | "action"
 > & {
     /**
      * A reference to the POST route that handles the form's submission. Used regardless of whether
@@ -49,24 +48,8 @@ export function Form<FormStateSchema extends SomeFormSchema>({
             id={formId}
             method="post"
             action={onSubmit.url}
-            // browser:onsubmit={createEventHandler(
-            //     (_formId, _url, _frameSelector) => (e) => {
-            //         e.preventDefault();
-            //         // TODO await HyTTS.submitForm(formId, url, frameId);
-            //     },
-            //     formId,
-            //     onSubmit.url,
-            //     target?.frameSelector,
-            // )}
-            // browser:onchange={createEventHandler(
-            //     (_formId, _url, _params) => () => {
-            //         // TODO: SET VALIDATE ONLY HEADER IN CASE SUBMIT ROUTE IS USED!
-            //         //    return HyTTS.executeFormAction(formId, url, params);
-            //     },
-            //     formId,
-            //     onValidate?.url ?? onSubmit.url,
-            //     "", // TODO toUrlSearchParams(validationAction.bodyParams)
-            // )}
+            data-hy-validate={onValidate?.url ?? onSubmit.url}
+            data-hy-frame={target?.frameId}
         />
     );
 }
@@ -83,8 +66,12 @@ export function createForm<FormStateSchema extends SomeFormSchema>(
     type InputFormState = z.input<FormStateSchema>;
     type PartialFormState = z.output<ToPartialSchema<FormStateSchema>>;
 
-    const frameId = `f_${formId}`;
-    const Frame = createFrame(frameId);
+    if (formId.includes("@")) {
+        throw new Error("You cannot use '@' as part of an id.");
+    }
+
+    const formFrameId = `${formId}@frame`;
+    const Frame = createFrame(formFrameId);
     const getSchema = async () =>
         typeof formStateSchema === "function" ? await formStateSchema() : formStateSchema;
 
@@ -107,11 +94,7 @@ export function createForm<FormStateSchema extends SomeFormSchema>(
 
         return (
             <formContext.Provider
-                value={{
-                    formState: state,
-                    errors,
-                    formId,
-                }}
+                value={{ formState: state, errors, formId, frameId: formFrameId }}
             >
                 <Frame>
                     <FormContent />
@@ -127,8 +110,12 @@ export function createForm<FormStateSchema extends SomeFormSchema>(
         const { method, searchParams, requestBody } = useHttpContext();
         const paramsSource = method === "GET" ? searchParams : requestBody;
 
-        const formState = parseUrlSearchParams(toPartialSchema(schema), paramsSource)!;
-        return <props.Content formState={formState} />;
+        const { $form } = parseUrlSearchParams(
+            z.object({ $form: toPartialSchema(schema) }),
+            paramsSource,
+        )!;
+
+        return <props.Content formState={$form!} />;
     }
 
     FormContext.updateState = (
@@ -142,17 +129,33 @@ export function createForm<FormStateSchema extends SomeFormSchema>(
     };
 
     FormContext.submit = (
-        onSuccess: JsxComponent<{ formState: z.output<FormStateSchema> }>,
+        /**
+         * The action that is carried out if the form passed validation, like storing the data in
+         * some database, sending an e-mail, etc.
+         */
+        action: JsxComponent<{ formState: z.output<FormStateSchema> }>,
     ): FormElement<InputFormState> => {
         return (
-            <WithPartialFormState Content={(formState) => <Submit formState={formState} />} />
+            <WithPartialFormState Content={({ formState }) => <Submit formState={formState} />} />
         ) as any;
 
         async function Submit(props: FormContentProps<InputFormState>) {
             const result = (await getSchema()).safeParse(props.formState);
 
             if (result.success) {
-                return onSuccess({ formState: result.data });
+                // The submit route is often used for validation-only purposes as well, because in
+                // some (or probably most?) cases, a form validation is just a form submission without
+                // the side effect after successful validation. This is purely a DX optimization, saving
+                // the developer from registering two routes (validation and submission) per form when
+                // one suffices in most cases.
+                // The browser tells us whether this is a validation-only request via an HTTP header. So
+                // if this header is sent, we don't execute the submit action the form.
+                const validationOnly = !!useRequestHeader("x-hy-validate-form");
+                return validationOnly ? (
+                    <FormContext formState={props.formState} />
+                ) : (
+                    action({ formState: result.data })
+                );
             } else {
                 useHttpStatusCode(422);
                 return <FormContext formState={props.formState} />;
@@ -178,9 +181,9 @@ export function useFormProperty<FormState extends Record<string, unknown>, T>(
 
 export type FormButtonProps<FormState extends Record<string, unknown>> = Omit<
     JSX.HTMLAttributes<HTMLButtonElement>,
-    "browser:onclick" | "type"
+    "type"
 > & {
-    /** The action that should be executed when the form is submitted using this button. */
+    /** The route the form data should be submitted to when this button is clicked. */
     readonly href: Href<"POST", FormValues<FormState>>;
     /** If `true`, marks all form fields as touched after the form submission is completed. */
     readonly markFieldsAsTouched?: boolean;
@@ -194,27 +197,17 @@ export function FormButton<FormState extends Record<string, unknown>>({
     keepFieldsEnabled,
     ...props
 }: FormButtonProps<FormState>) {
-    const { formId } = useContext(formContext);
+    const { formId, frameId } = useContext(formContext);
 
     return (
         <button
             {...props}
             type="button"
-            browser:onclick={createEventHandler(
-                (_formId, _url, _params, _markFieldsAsTouched, _keepFieldsEnabled) => () => {},
-                // TODO  HyTTS.executeFormAction(
-                //     formId,
-                //     url,
-                //     params,
-                //     !keepFieldsEnabled,
-                //     markFieldsAsTouched,
-                // ),
-                formId,
-                href.url,
-                href.body,
-                markFieldsAsTouched,
-                keepFieldsEnabled,
-            )}
+            data-hy-method={href.method}
+            data-hy-frame={frameId}
+            data-hy-url={href.url}
+            data-hy-body={href.body}
+            data-hy-form={formId}
         />
     );
 }
@@ -223,4 +216,5 @@ const formContext = createContext<{
     readonly formState: Record<string, unknown>;
     readonly errors: Record<string, unknown>;
     readonly formId: string;
+    readonly frameId: string;
 }>({ name: "form context" });

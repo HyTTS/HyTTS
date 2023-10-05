@@ -77,7 +77,7 @@ export function getHrefs<
                 (hasPathParams ? replacePathParams(url, params[0]) : url) +
                 (routeParams && httpMethod === "GET" ? `?${routeParams}` : ""),
             method: httpMethod,
-            body: httpMethod !== "GET" ? routeParams : undefined,
+            body: httpMethod !== "GET" && routeParams ? routeParams : undefined,
             [hrefSymbol]: null,
         };
 

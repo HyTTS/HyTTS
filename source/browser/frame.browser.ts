@@ -1,66 +1,75 @@
 import { log } from "$/log.browser";
 import { reconcile } from "$/reconcile.browser";
 
-/**
- * Used to select a frame within the document, which is either the document's body element or the id
- * of a `hy-frame` element, in which case the frame id is expected to be unique.
- */
-export type FrameSelector = string;
+/** The well-known id of the root frame, right below the document's body. */
+export const rootFrameId = "root";
 
 /**
- * Updates the contents of the selected frame with the element returned by the given callback.
- * Ensures that only one update can be in-flight concurrently for the frame. If a new update is
- * issued before a previous one finished, the previous one is immediately aborted so that it can't
- * have any effect on the frame anymore and the new update is started immediately. After a
- * successful update, all pending updates for any of the frame's transitive child frames are
- * aborted.
+ * Used to select a `hy-frame` element within the document. It is assumed that there always is a
+ * root frame directly below the document's body.
+ */
+export type FrameId = string;
+
+/**
+ * Updates the contents of the frame with the element returned by the given callback. Ensures that
+ * only one update can be in-flight concurrently for the frame. If a new update is issued before a
+ * previous one finished, the previous one is immediately aborted so that it can't have any effect
+ * on the frame anymore and the new update is started immediately. After a successful update, all
+ * pending updates for any of the frame's transitive child frames are aborted.
  *
- * @param frameSelector Selects the frame that should be updated.
+ * @param frameId The id of the frame that should be updated.
  * @param getFrameElement A callback that returns the HTML element the frame should be updated with.
- *   The callback should use the given `AbortSignal` to abort the update as soon as possible once a
- *   newer update is started.
+ *   If `undefined` is returned, the frame's content remains unmodified. The callback should use the
+ *   given `AbortSignal` to abort the update as soon as possible once a newer update is started.
  */
-export async function updateFrame(
-    frameSelector: FrameSelector,
-    getFrameElement: (frame: Element, abortSignal: AbortSignal) => Promise<Element>,
+export function updateFrame(
+    frameId: FrameId,
+    getFrameElement: (frame: Element, abortSignal: AbortSignal) => Promise<Element | undefined>,
 ): Promise<void> {
-    const frame = document.querySelector(frameSelector);
-    if (!frame) {
-        // Obviously, we'll always find the `body` element of a document, so this can only happen for
-        // incorrect/unknown ids.
-        throw new Error(`Frame '${frameSelector}' not found.`);
+    const frame = document.getElementById(frameId);
+    if (!frame || frame.tagName.toLowerCase() !== "hy-frame") {
+        throw new Error(`Frame '${frameId}' not found.`);
     }
-
-    await abortPreviousUpdate(frame);
-
-    // Collect the frame's direct and indirect frame children transitively from the DOM. We have to
-    // do this before the update, as the current children, for which we later cancel all pending
-    // updates, might no longer be part of the DOM afterwards. We must cancel child frame updates
-    // because the current frame might have new frame children with the same child frame ids as
-    // before, but the updates for the old child frames should not affect the new child frames.
-    const childFrames = [...document.querySelectorAll("hy-frame")].filter(
-        (childFrame) => childFrame !== frame && frame.contains(childFrame),
-    );
 
     // Start the new update and store it and a new abort controller as a pending update of the frame,
     // so that the next update can cancel this update, if necessary.
     const abortController = new AbortController();
-    const newFramePromise = getFrameElement(frame, abortController.signal);
-    pendingUpdates.set(frame, [abortController, newFramePromise]);
+    const updateFramePromise = (async () => {
+        // Await the abortion of all previous updates of this frame so that there is only a single
+        // frame update in-flight at a given time.
+        await abortPreviousUpdate(frame);
 
-    // Once the update is completed, reconcile the changes from the new frame and abort all child
-    // frame updates and wait for their completion.
-    abortController.signal.throwIfAborted();
-    reconcile(frame, await newFramePromise);
-    await Promise.all(childFrames.map(abortPreviousUpdate));
+        // Collect the frame's direct and indirect frame children transitively from the DOM. We have to
+        // do this before the update, as the current children, for which we later cancel all pending
+        // updates, might no longer be part of the DOM afterwards. We must cancel child frame updates
+        // because the current frame might have new frame children with the same child frame ids as
+        // before, but the updates for the old child frames should not affect the new child frames.
+        const childFrames = [...document.querySelectorAll("hy-frame")].filter(
+            (childFrame) => childFrame !== frame && frame.contains(childFrame),
+        );
+
+        const newFrame = await getFrameElement(frame, abortController.signal);
+
+        // Once the new frame content is available, reconcile the changes from the new frame and abort
+        // all child frame updates so that we reach a steady state again.
+        if (newFrame) {
+            abortController.signal.throwIfAborted();
+
+            reconcile(frame, newFrame);
+            await Promise.all(childFrames.map(abortPreviousUpdate));
+        }
+    })();
+
+    pendingUpdates.set(frame, [abortController, updateFramePromise]);
+    return updateFramePromise;
 }
 
 /**
  * Maps an element representing a frame to the abort controller of the last frame update. Using a
- * weak map ensures that there are no memory leaks when the element is eventually removed from the
- * UI and could thus be garbage collected.
+ * weak map ensures that there are no memory leaks when the frame element is eventually removed from
+ * the DOM and can thus be garbage collected.
  */
-const pendingUpdates = new WeakMap<Element, [AbortController, Promise<Element>]>();
+const pendingUpdates = new WeakMap<Element, [AbortController, Promise<void>]>();
 
 /**
  * Aborts any previous update, if there is one, that might or might not still be in progress and
@@ -91,11 +100,18 @@ async function abortPreviousUpdate(frame: Element) {
  */
 export async function fetchFrame(frame: Element, url: string, fetchOptions: RequestInit) {
     try {
-        const response = await fetch(url, fetchOptions);
-        return {
-            response,
-            frameElement: await extractFrameFromResponse(frame, response, fetchOptions.signal),
-        };
+        return await fetch(url, {
+            ...fetchOptions,
+            headers: {
+                ...fetchOptions.headers,
+                // see https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#use-of-custom-request-headers
+                "x-hy": "true",
+                "x-hy-frame-id": frame.getAttribute("id") ?? "error: unknown frame id",
+                ...(!fetchOptions.method || fetchOptions.method === "GET"
+                    ? {}
+                    : { "content-type": "application/x-www-form-urlencoded" }),
+            },
+        });
     } catch (e: unknown) {
         if (e instanceof TypeError) {
             // This indicates a generic network error, where the server is unreachable for some
@@ -121,7 +137,7 @@ export async function fetchFrame(frame: Element, url: string, fetchOptions: Requ
  * default behavior. When the default is disabled, or the server response has a success status code,
  * the frame's contents remain unchanged and an error is raised to cancel the frame update.
  */
-async function extractFrameFromResponse(
+export async function extractFrameFromResponse(
     frame: Element,
     response: Response,
     signal: AbortSignal | null | undefined,
@@ -130,10 +146,10 @@ async function extractFrameFromResponse(
 
     signal?.throwIfAborted();
 
-    const selector = frame instanceof HTMLBodyElement ? "body" : `#${frame.id}`;
-    const newFrameElement = document.querySelector(selector);
+    const frameId = frame.getAttribute("id") ?? "";
+    const newFrameElement = document.getElementById(frameId);
 
-    if (!newFrameElement) {
+    if (!newFrameElement || newFrameElement.tagName.toLowerCase() !== "hy-frame") {
         const updateFrameForErrorResponses = frame.dispatchEvent(
             new CustomEvent("hy:frame-missing", {
                 bubbles: true,
@@ -142,28 +158,27 @@ async function extractFrameFromResponse(
             }),
         );
 
+        const message = `Frame '${frameId}' not found in the server's response.`;
         if (updateFrameForErrorResponses && response.status >= 300) {
+            log.warn(message);
+
             // The default behavior is to show the entire server response within the frame.
             // For reconciliation to work correctly later on, we have to clone the current
-            // frame's node first and copy the new documents body's children over.
+            // frame's node first and copy the new documents body's children over. That way,
+            // the frame remains in the DOM and reconciliation replaces all of its contents
+            // with the server response.
             const newFrame = frame.cloneNode() as HTMLElement;
             newFrame.replaceChildren(...document.body.children);
             return newFrame;
         } else {
-            throw new Error(`Frame '${selector}' not found in the server's response.`);
+            throw new Error(message);
         }
     }
 
     return newFrameElement;
 }
 
-/**
- * Used to parse the HTML returned from the server. Since we use the document's body as an implicit
- * top-level frame, we can't rely on the DOM's `DocumentFragment` API, as that removes the `head`
- * and `body` elements during parsing, which would unnecessarily complicate things for us. On the
- * other hand, the `DOMParser` always introduces a `html`, `head`, and `body` even for partial
- * responses, which we can silently ignore.
- */
+/** Used to parse the HTML returned from the server. */
 const parseHTML = (() => {
     const parser = new DOMParser();
     return async (response: Response) => {

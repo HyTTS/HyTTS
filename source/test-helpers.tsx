@@ -37,9 +37,8 @@ async function testApp<TReturn>(
 }
 
 /**
- * Starts an Express app for testing purposes based on the given `routes`. Provides the URLs for the
- * routes as well as two fetch functions for routes and actions to the callback that executes the
- * actual testing logic.
+ * Starts an Express app for testing purposes based on the given `routes`. Provides the Hrefs for
+ * the routes as well as a fetch functions to the callback that executes the actual testing logic.
  */
 export function runTestApp<T extends RoutesComponent<any>>(
     routes: T,

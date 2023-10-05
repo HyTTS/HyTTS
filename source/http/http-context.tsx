@@ -1,12 +1,9 @@
 import { randomBytes } from "node:crypto";
 import type { ZodType, ZodTypeDef } from "zod";
-import { HttpError, toHttpStatusCode } from "@/http/http-error";
+import { HttpError } from "@/http/http-error";
 import { type ContextProviderProps, createContext, useContext } from "@/jsx/context";
 import { CspNonceProvider } from "@/jsx/csp-nonce";
-import { ErrorBoundary, type ErrorViewProps } from "@/jsx/error-boundary";
 import type { JsxElement } from "@/jsx/jsx-types";
-import { UniqueNameProvider } from "@/jsx/unique-name";
-import { log } from "@/log";
 import type { Href } from "@/routing/href";
 import { parseUrlSearchParams } from "@/serialization/url-params";
 
@@ -55,7 +52,7 @@ export function HttpResponse(
             }}
         >
             <CspNonceProvider value={randomBytes(32).toString("base64")}>
-                <UniqueNameProvider namespace="root">{props.children}</UniqueNameProvider>
+                {props.children}
             </CspNonceProvider>
         </httpContext.Provider>
     );
@@ -173,9 +170,9 @@ export function useRequester() {
 }
 
 /**
- * Checks the current HTTP request's 'x-hy-frame-selector' header to determine the selector of the
- * frame that is updated with the response HTML.
+ * Checks the current HTTP request's 'x-hy-frame-id' header to determine the id of the frame that is
+ * updated with the response HTML.
  */
-export function useRequestedFrameSelector() {
-    return useContext(httpContext).getHeader("x-hy-frame-selector");
+export function useRequestedFrameId() {
+    return useContext(httpContext).getHeader("x-hy-frame-id");
 }

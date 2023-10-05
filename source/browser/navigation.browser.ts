@@ -1,4 +1,11 @@
-import { fetchFrame, type FrameSelector, updateFrame } from "$/frame.browser";
+import { createFormRequestBody } from "$/form.browser";
+import {
+    extractFrameFromResponse,
+    fetchFrame,
+    type FrameId,
+    rootFrameId,
+    updateFrame,
+} from "$/frame.browser";
 import type { HttpMethod } from "@/http/http-context";
 
 export type NavigationOptions = {
@@ -9,14 +16,17 @@ export type NavigationOptions = {
     /** The URL-encoded body parameters that should be sent with the (non-`GET`) request. */
     readonly bodyParams?: string;
     /**
-     * The URL that should be pushed onto the history stack. Defaults to the `href` prop if
-     * `undefined`.
+     * The URL that should be pushed onto the history stack if `updateHistory` is `true`. Defaults
+     * to the `href` prop if `historyHref` is `undefined`.
      */
     readonly historyHref?: string;
-    /** If `true`, updates the browser's history stack. */
+    /**
+     * If `true`, updates the browser's history stack. Defaults to `true` for requests targeting the
+     * root frame.
+     */
     readonly updateHistory?: boolean;
     /** Selects the frame that should be updated. */
-    readonly frameSelector: FrameSelector;
+    readonly frameId: FrameId;
 };
 
 /**
@@ -53,8 +63,12 @@ export async function navigateTo({
     bodyParams,
     updateHistory,
     historyHref,
-    frameSelector,
+    frameId,
 }: NavigationOptions): Promise<void> {
+    // Only update the history if so configured. If nothing is specified, update the history by default
+    // for the root frame, but not for all other frames.
+    updateHistory ??= frameId === rootFrameId;
+
     // Update the history immediately to simulate the native browser behavior.
     const thisNavigationId = ++navigationId;
     if (updateHistory) {
@@ -62,29 +76,20 @@ export async function navigateTo({
     }
 
     let response: Response = undefined!;
-    await updateFrame(frameSelector, async (frame, signal) => {
-        const fetchResult = await fetchFrame(frame, href, {
+    await updateFrame(frameId, async (frame, signal) => {
+        response = await fetchFrame(frame, href, {
             method: httpMethod,
             body: httpMethod === "GET" ? undefined : bodyParams,
             signal,
-            headers: {
-                // see https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#use-of-custom-request-headers
-                "x-hy": "true",
-                "x-hy-frame-selector": frameSelector,
-                ...(httpMethod === "GET"
-                    ? {}
-                    : { "content-type": "application/x-www-form-urlencoded" }),
-            },
         });
 
-        response = fetchResult.response;
-        return fetchResult.frameElement;
+        return await extractFrameFromResponse(frame, response, signal);
     });
 
     // For redirected responses, replace the previously pushed history entry to mimic the native
-    // browser behavior as best as we can (but see also the remarks for `navigateToAction`). To
-    // prevent a race condition where multiple concurrent navigation operations to routes or actions overlap,
-    // we only replace the history entry if the previously pushed one is still topmost.
+    // browser behavior as best as we can. To prevent a race condition where multiple concurrent
+    // navigation operations overlap, we only replace the history entry if the previously pushed
+    // one is still topmost.
     if (
         updateHistory &&
         response.redirected &&
@@ -94,44 +99,41 @@ export async function navigateTo({
     }
 }
 
-/**
- * Specifies a set of attributes that control the behavior of `interceptClicks` for both routes and
- * actions.
- */
+/** Specifies a set of attributes that control the behavior of `interceptClicks`. */
 export type DomNavigationOptions = {
     /**
-     * The selector of the frame that should be updated with the HTML returned by the server. This
-     * must either be `"body"` or `"#some-id"` for a `hy-frame` with id `"some-id"`. Specified on
+     * The id of the frame that should be updated with the HTML returned by the server. Specified on
      * the target element with the `data-hy-frame` attribute.
      */
-    readonly hyFrame?: FrameSelector;
-
+    readonly hyFrame?: FrameId;
     /**
      * The URL of the route that should be navigated to. This is required for buttons and optional
      * for anchors, whose `href` attribute takes precedence. Specified on the target element with
      * the `data-hy-url` attribute.
      */
     readonly hyUrl?: string;
-
     /**
      * Indicates the HTTP method that is used to execute the request. Specified on the target
      * element with the `data-hy-method` attribute.
      */
     readonly hyMethod?: HttpMethod;
-
     /**
      * For GET requests, indicates whether a new entry for the route's URL should be pushed onto the
-     * browser's history stack. Defaults to `true` for requests targeting the body frame. For
+     * browser's history stack. Defaults to `true` for requests targeting the root frame. For
      * non-GET requests, contains the URL that should be pushed onto the browser's history stack.
      * Specified on the target element with the `data-hy-update-history` attribute.
      */
     readonly hyUpdateHistory?: string;
-
     /**
      * The URL-encoded request body. Specified on the target element with the `data-hy-body`
      * attribute.
      */
     readonly hyBody?: string;
+    /**
+     * If the button triggers a non-GET request and belongs to a form, the form's data is sent along
+     * with the request.
+     */
+    readonly hyForm?: string;
 };
 
 /**
@@ -141,7 +143,7 @@ export type DomNavigationOptions = {
  * `DomNavigationOptions` of the target's `dataset` property.
  */
 export function interceptClicks() {
-    window.onclick = async (e: MouseEvent) => {
+    document.addEventListener("click", (e: MouseEvent) => {
         if (e.defaultPrevented) {
             return;
         }
@@ -170,25 +172,39 @@ export function interceptClicks() {
 
         switch (method) {
             case "GET":
-                await navigateTo({
-                    frameSelector: options.hyFrame,
+                void navigateTo({
+                    frameId: options.hyFrame,
                     href,
                     httpMethod: "GET",
-                    // Only update the history if so configured. If nothing is specified, update the history by default
-                    // for the document body, but not for all other frames.
-                    updateHistory: options.hyUpdateHistory ? true : options.hyFrame === "body",
+                    updateHistory:
+                        // We have to explicitly pass through the `undefined` so that the root frame
+                        // logic kicks in.
+                        options.hyUpdateHistory === undefined
+                            ? undefined
+                            : !!options.hyUpdateHistory,
                 });
                 break;
-            case "POST":
-                await navigateTo({
-                    frameSelector: options.hyFrame,
+            case "POST": {
+                let bodyParams = options.hyBody;
+                if (options.hyForm) {
+                    const form = document.getElementById(options.hyForm);
+                    if (!form || !(form instanceof HTMLFormElement)) {
+                        throw new Error(`Unable to find form '${options.hyForm}'.`);
+                    }
+
+                    bodyParams = createFormRequestBody(form, bodyParams);
+                }
+
+                void navigateTo({
+                    frameId: options.hyFrame,
                     href,
                     httpMethod: "POST",
-                    bodyParams: options.hyBody ?? "",
+                    bodyParams,
                     updateHistory: !!options.hyUpdateHistory,
                     historyHref: options.hyUpdateHistory,
                 });
                 break;
+            }
             case undefined:
                 break;
             default: {
@@ -197,11 +213,11 @@ export function interceptClicks() {
                 throw new Error(`Unknown or unsupported HTTP request method '${method}'.`);
             }
         }
-    };
+    });
 }
 
 /**
- * Intercepts history changes, reloading the body frame to make backward/forward navigation work as
+ * Intercepts history changes, reloading the root frame to make backward/forward navigation work as
  * expected. If a frame within the route was updated to a different state than what the server
  * originally rendered, this state might not be restored correctly because the server might render
  * the original UI again. This is expected behavior, however. If such a state change should be
@@ -211,8 +227,10 @@ export function interceptClicks() {
  * navigation.
  */
 export function interceptHistoryChanges() {
-    window.onpopstate = () =>
-        navigateTo({ frameSelector: "body", href: location.href, httpMethod: "GET" });
+    window.addEventListener(
+        "popstate",
+        () => void navigateTo({ frameId: rootFrameId, href: location.href, httpMethod: "GET" }),
+    );
 }
 
 let navigationId = 0;
