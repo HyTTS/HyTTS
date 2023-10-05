@@ -1,21 +1,14 @@
-import { frameContext, type FrameMetadata } from "@/dom/frame";
-import { BrowserScriptRenderer } from "@/jsx/browser-script";
+import { createFrame } from "@/dom/frame";
 import type { JSX } from "@/jsx/jsx-types";
-import { useUniqueName } from "@/jsx/unique-name";
 
 export type BodyProps = JSX.HTMLAttributes<HTMLBodyElement>;
 
-export function Body({ children, id, ...props }: BodyProps) {
-    id ??= useUniqueName();
+export function Body({ children, ...props }: BodyProps) {
     return (
-        <body {...props} id={id}>
-            <frameContext.Provider value={BodyFrame}>
-                <BrowserScriptRenderer>{children}</BrowserScriptRenderer>
-            </frameContext.Provider>
+        <body {...props}>
+            <BodyFrame>{children}</BodyFrame>
         </body>
     );
 }
 
-export const BodyFrame: FrameMetadata = {
-    frameSelector: "body",
-};
+export const BodyFrame = createFrame("root");

@@ -18,7 +18,7 @@ describe("routing", () => {
         expect(href("POST /").form).toBeUndefined();
         expect(await render(rs, href("GET /"))).toBe("g");
 
-        expect(href("POST /").body).toBe("");
+        expect(href("POST /").body).toBeUndefined();
         expect(href("POST /").url).toBe("/");
         expect(href("POST /").method).toBe("POST");
         expect(href("POST /").form).toBeUndefined();
@@ -222,7 +222,7 @@ describe("routing", () => {
         });
         const href = getHrefs(rs);
 
-        expect(href("POST /").body).toBe("");
+        expect(href("POST /").body).toBeUndefined();
         expect(href("POST /").url).toBe("/");
         expect(href("POST /").method).toBe("POST");
         expect(await render(rs, href("POST /"))).toBe("p");
@@ -631,13 +631,13 @@ describe("routing", () => {
         const rs = routes({ "POST /": () => form.updateState((s) => s) });
         const href = getHrefs(rs);
 
-        expect(href("POST /").body).toBe("");
+        expect(href("POST /").body).toBeUndefined();
         expect(href("POST /").url).toBe("/");
         expect(href("POST /").method).toBe("POST");
         expect(href("POST /").form).toBeUndefined();
         await expect(() => render(rs, href("POST /"))).rejects.toThrow("BadRequest");
-        expect(await render(rs, { ...href("POST /"), body: "s=abc&n=17" })).toBe(
-            '<hy-frame id="f_form">abc 17</hy-frame>',
+        expect(await render(rs, { ...href("POST /"), body: "$form.s=abc&$form.n=17" })).toBe(
+            '<hy-frame id="form@frame">abc 17</hy-frame>',
         );
 
         let x: Href<"POST", FormValues<{ s: string; n: number }>> = href("POST /");
@@ -743,9 +743,9 @@ describe("routing", () => {
         expect(await render(rs, href("GET /nested/:p/inner2", { p: "p" }, { s: "" }))).toBe(
             "aaa b2 c2 d2 e2 f",
         );
-        expect(await render(rs, { ...href("POST /nested/:p/form", { p: "p" }), body: "s=a" })).toBe(
-            '<hy-frame id="f_form">aaa bf cf - ee f</hy-frame>',
-        );
+        expect(
+            await render(rs, { ...href("POST /nested/:p/form", { p: "p" }), body: "$form.s=a" }),
+        ).toBe('<hy-frame id="form@frame">aaa bf cf - ee f</hy-frame>');
     });
 
     it("supports async meta functions", async () => {

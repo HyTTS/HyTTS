@@ -12,10 +12,10 @@ export type Frame = JsxComponent<PropsWithChildren> & FrameMetadata;
 /** Contains additional metadata about a frame. */
 export type FrameMetadata = {
     /**
-     * The frame's selector, i.e., either `"body"` or a frame's id, which is required to be unique
-     * within the entire HTML document.
+     * The frame's id that must be document-wide unique and stable across requests, server restarts,
+     * and app updates.
      */
-    readonly frameSelector: string;
+    readonly frameId: string;
 };
 
 export type FrameProps = PropsWithChildren<{
@@ -28,7 +28,8 @@ export type FrameProps = PropsWithChildren<{
  * defining module itself but also across modules via exports/imports.
  *
  * @param frameId The frame's id, which is required to be unique within the entire HTML document.
- *   Additionally, this id must be stable across server reloads and app updates.
+ *   Additionally, this id must be stable across requests, server reloads, and ideally even app
+ *   updates.
  */
 export function createFrame(frameId: string): Frame {
     const frame = (props: FrameProps) => {
@@ -43,7 +44,7 @@ export function createFrame(frameId: string): Frame {
         );
     };
 
-    frame.frameSelector = `#${frameId}`;
+    frame.frameId = frameId;
     return frame;
 }
 
@@ -55,4 +56,4 @@ export function useFrameMetadata() {
     return useContext(frameContext);
 }
 
-export const frameContext = createContext<FrameMetadata>();
+const frameContext = createContext<FrameMetadata>({ name: "frame metadata" });

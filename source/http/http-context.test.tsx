@@ -3,7 +3,7 @@ import {
     AbsoluteRedirect,
     Redirect,
     useHttpStatusCode,
-    useRequestedFrameSelector,
+    useRequestedFrameId,
     useRequester,
     useRequestHeader,
     useResponseHeader,
@@ -137,20 +137,20 @@ describe("http-context", () => {
             },
         ));
 
-    it("returns the frame selector of the current request", () =>
+    it("returns the frame id of the current request", () =>
         runTestApp(
             routes({
-                "GET /single": () => {
-                    return <>{useRequestedFrameSelector() ?? "-"}</>;
+                "GET /id": () => {
+                    return <>{useRequestedFrameId() ?? "-"}</>;
                 },
             }),
             async (href, fetch) => {
-                const browserResponse = await fetch(href("GET /single"), {
-                    "x-hy-frame-selector": "test",
+                const browserResponse = await fetch(href("GET /id"), {
+                    "x-hy-frame-id": "test",
                 });
                 expect(await browserResponse.text()).toBe("test");
 
-                const hyResponse = await fetch(href("GET /single"));
+                const hyResponse = await fetch(href("GET /id"));
                 expect(await hyResponse.text()).toBe("-");
             },
         ));

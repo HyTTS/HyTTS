@@ -1,18 +1,18 @@
 /*
 
 In HyTTS, almost arbitrary JavaScript objects can be serialized and deserialized to roundtrip them through the browser,
-for example, in action body parameters (forms, non-form-based POST requests) or URL search query parameters. In both 
+for example, in POST body parameters (forms, non-form-based POST requests) or URL search query parameters. In both 
 cases, the serialized format is an URL-encoded query string, i.e., `?a=x&b=y&c=z`. Such a query string by itself as no 
 nested structure, no arrays, and all values are string-based. Additionally, path parameters such as `/a/:x/b/:y` also 
 have to be serialized and deserialized from and to strings, in this case supporting neither nesting nor arrays, however.
 
 HyTTS allows the developer to use nested objects, arrays, and non-string types for an improved developer experience for
-both action and search parameters as well as non-string types (but no nesting and arrays) for path parameters. HyTTS 
+both body and search parameters as well as non-string types (but no nesting and arrays) for path parameters. HyTTS 
 thus provides a serialization and deserialization infrastructure based on Zod for validation and qs for parsing to 
-convert from those easy-to-use JavaScript objects to the string reprsentation and vice versa with full type safety. All 
+convert from those easy-to-use JavaScript objects to the string representation and vice versa with full type safety. All 
 of this, of course, is highly security-critical.
 
-The developer must provide a Zod schema for each route, search, or action parameter. This schema always receives strings
+The developer must provide a Zod schema for each path, search, or body parameter. This schema always receives strings
 to subsequently parse, validate, and transform into the resulting value. For primitive, built-in types such as
 `boolean` and `number`, HyTTS takes care of the string transformation, thus making it possible to just use `z.number()`,
 for example. For custom types, e.g., when parsing a joda-js `LocalDate`, the developer must use a Zod schema such as
@@ -23,7 +23,7 @@ values with non-`Object` prototypes without a custom `toString()`, cannot be ser
 are currently supported.
 
 Nested objects are serialized by "dot-joining" the property path, e.g., a value of `{ a: { b: true }}` is serialized as
-`?a.b=true`. Similarily, arrays are serialized by making the index explicit, e.g., a value of `{ a: [1, 2] }` is 
+`?a.b=true`. Similarly, arrays are serialized by making the index explicit, e.g., a value of `{ a: [1, 2] }` is 
 serialized as `?a.0=1&a.1=2`. For security reasons, there is an upper limit on the maximum allowed array length, so
 that something like `?a.0=1&a.100000000=2` is immediately rejected without causing any denial-of-service problems.
 Arrays and objects can be freely nested within each other.
@@ -50,7 +50,7 @@ import { z, type ZodFirstPartyTypeKind } from "zod";
 
 // This is only used to get notified about new first-party Zod types when Zod is updated.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const supporedFirstPartyTypes: Record<ZodFirstPartyTypeKind, boolean> = {
+const supportedFirstPartyTypes: Record<ZodFirstPartyTypeKind, boolean> = {
     // Fully supported Zod types:
     [z.ZodFirstPartyTypeKind.ZodString]: true,
     [z.ZodFirstPartyTypeKind.ZodNumber]: true,
@@ -75,7 +75,7 @@ const supporedFirstPartyTypes: Record<ZodFirstPartyTypeKind, boolean> = {
         true /* because of `z.custom()`, must not be used for structured data
                 and be able to convert from string */,
 
-    // Currenly unsupported Zod types, but might potentially be supported in the future:
+    // Currently unsupported Zod types, but might potentially be supported in the future:
     [z.ZodFirstPartyTypeKind.ZodNaN]: false,
     [z.ZodFirstPartyTypeKind.ZodBigInt]: false,
     [z.ZodFirstPartyTypeKind.ZodTuple]: false,

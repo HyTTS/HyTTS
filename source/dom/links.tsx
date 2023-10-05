@@ -40,7 +40,7 @@ export function A({ target, updateHistory, reloadDocument, href, ...props }: APr
         <a
             {...props}
             data-hy-method="GET"
-            data-hy-frame={target?.frameSelector ?? useFrameMetadata().frameSelector}
+            data-hy-frame={(target ?? useFrameMetadata()).frameId}
             data-hy-update-history={updateHistory}
             href={href.url}
         />
@@ -65,7 +65,7 @@ export function Button<Method extends HttpMethod>({
             {...props}
             type="button"
             data-hy-method={href.method}
-            data-hy-frame={target?.frameSelector ?? useFrameMetadata().frameSelector}
+            data-hy-frame={(target ?? useFrameMetadata()).frameId}
             data-hy-update-history={isHref(updateHistory) ? updateHistory.url : updateHistory}
             data-hy-url={href.url}
             data-hy-body={href.body}
