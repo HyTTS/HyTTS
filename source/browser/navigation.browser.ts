@@ -1,4 +1,4 @@
-import { createFormRequestBody } from "$/form.browser";
+import { updateForm } from "$/form.browser";
 import {
     extractFrameFromResponse,
     fetchFrame,
@@ -101,7 +101,8 @@ export type DomNavigationOptions = {
      * For GET requests, indicates whether a new entry for the route's URL should be pushed onto the
      * browser's history stack. Defaults to `true` for requests targeting the root frame. For
      * non-GET requests, contains the URL that should be pushed onto the browser's history stack.
-     * Specified on the target element with the `data-hy-update-history` attribute.
+     * Has no effect if `hyForm` is defined and thus a form is updated. Specified on the target
+     * element with the `data-hy-update-history` attribute.
      */
     readonly hyUpdateHistory?: string;
     /**
@@ -111,9 +112,20 @@ export type DomNavigationOptions = {
     readonly hyBody?: string;
     /**
      * If the button triggers a non-GET request and belongs to a form, the form's data is sent along
-     * with the request.
+     * with the request to update the form state. Specified on the target element with the
+     * `data-hy-form` attribute.
      */
     readonly hyForm?: string;
+    /**
+     * If the button triggers a non-GET request and belongs to a form, indicates whether all form
+     * data elements should be marked as touched after the form state update. Specified on the
+     * target element with the `data-hy-mark-as-touched` attribute.
+     *
+     * - All: Affects all fields contained in the form _after_ the update.
+     * - Existing: Affects all fields contained in the form _before_ the update.
+     * - None (default): Does not mark any fields as touched.
+     */
+    readonly hyMarkAsTouched?: "none" | "all" | "existing";
 };
 
 /**
@@ -164,27 +176,30 @@ export function interceptClicks() {
                             : !!options.hyUpdateHistory,
                 });
                 break;
-            case "POST": {
-                let bodyParams = options.hyBody;
+            case "POST":
                 if (options.hyForm) {
                     const form = document.getElementById(options.hyForm);
                     if (!form || !(form instanceof HTMLFormElement)) {
                         throw new Error(`Unable to find form '${options.hyForm}'.`);
                     }
 
-                    bodyParams = createFormRequestBody(form, bodyParams);
+                    void updateForm({
+                        href,
+                        form,
+                        additionalData: options.hyBody,
+                        markFieldsAsTouched: options.hyMarkAsTouched,
+                    });
+                } else {
+                    void navigateTo({
+                        frameId: options.hyFrame,
+                        href,
+                        httpMethod: "POST",
+                        bodyParams: options.hyBody,
+                        updateHistory: !!options.hyUpdateHistory,
+                        historyHref: options.hyUpdateHistory,
+                    });
                 }
-
-                void navigateTo({
-                    frameId: options.hyFrame,
-                    href,
-                    httpMethod: "POST",
-                    bodyParams,
-                    updateHistory: !!options.hyUpdateHistory,
-                    historyHref: options.hyUpdateHistory,
-                });
                 break;
-            }
             case undefined:
                 break;
             default: {

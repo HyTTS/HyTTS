@@ -14,7 +14,7 @@ export type SomeFormSchema = ZodType<Record<string, unknown>, ZodTypeDef, any>;
 
 export type FormProps<FormState extends Record<string, unknown>> = Omit<
     JSX.FormHTMLAttributes<HTMLFormElement>,
-    "id" | "method" | "action"
+    "id" | "method" | "action" | "novalidate"
 > & {
     /**
      * A reference to the POST route that handles the form's submission. Used regardless of whether
@@ -50,6 +50,7 @@ export function Form<FormStateSchema extends SomeFormSchema>({
             action={onSubmit.url}
             data-hy-validate={onValidate?.url ?? onSubmit.url}
             data-hy-frame={target?.frameId}
+            novalidate
         />
     );
 }
@@ -185,9 +186,15 @@ export type FormButtonProps<FormState extends Record<string, unknown>> = Omit<
 > & {
     /** The route the form data should be submitted to when this button is clicked. */
     readonly href: Href<"POST", FormValues<FormState>>;
-    /** If `true`, marks all form fields as touched after the form submission is completed. */
-    readonly markFieldsAsTouched?: boolean;
-    /** If `true`, the form fields remain enabled while the form submission is in progress. */
+    /**
+     * Marks form fields as touched after the form update is completed.
+     *
+     * - All: Affects all fields contained in the form _after_ the update.
+     * - Existing: Affects all fields contained in the form _before_ the update.
+     * - None (default): Does not mark any fields as touched.
+     */
+    readonly markFieldsAsTouched?: "none" | "all" | "existing";
+    /** If `true`, the form fields remain enabled while the form update is in progress. */
     readonly keepFieldsEnabled?: boolean;
 };
 
@@ -208,6 +215,7 @@ export function FormButton<FormState extends Record<string, unknown>>({
             data-hy-url={href.url}
             data-hy-body={href.body}
             data-hy-form={formId}
+            data-hy-mark-as-touched={markFieldsAsTouched}
         />
     );
 }
