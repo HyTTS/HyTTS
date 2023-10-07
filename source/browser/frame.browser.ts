@@ -113,11 +113,9 @@ export async function fetchFrame(frame: Element, url: string, fetchOptions: Requ
             },
         });
     } catch (e: unknown) {
-        if (e instanceof TypeError) {
-            // This indicates a generic network error, where the server is unreachable for some
-            // reason (the server might be down, there might be no internet connection, ...).
-            // In this case, we report the error on the frame as a bubbling event; typically,
-            // there is a top-level error handler for the offline scenario.
+        if (isNetworkError(e)) {
+            // We report an `hy:offline` error on the frame as a bubbling event; typically, there is
+            // a top-level error handler for the offline scenario.
             frame.dispatchEvent(new CustomEvent("hy:offline", { bubbles: true, cancelable: true }));
         }
 
@@ -125,6 +123,22 @@ export async function fetchFrame(frame: Element, url: string, fetchOptions: Requ
         // is to continue displaying the previous contents and show some sort of "offline" overlay.
         throw e;
     }
+}
+
+/**
+ * Checks whether the error indicates that a `fetch` request failed due to a generic network error,
+ * where the server is unreachable for some reason (the server might be down, there might be no
+ * internet connection, ...).
+ *
+ * It is a major design flaw of the `fetch` API that it is not possible to distinguish between
+ * malformed parameters and network errors: In both cases, a `TypeError` is thrown. We here assume
+ * that all `TypeError`s are actually network errors, which s safe to do, because everyone fixes all
+ * bugs before new code reaches production ;)
+ *
+ * See also https://developer.mozilla.org/en-US/docs/Web/API/fetch#exceptions
+ */
+function isNetworkError(e: unknown): e is TypeError {
+    return e instanceof TypeError;
 }
 
 /**

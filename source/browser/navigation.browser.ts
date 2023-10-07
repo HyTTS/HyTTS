@@ -30,32 +30,26 @@ export type NavigationOptions = {
 };
 
 /**
- * Simulates a full page navigation to a URL by, optionally, first pushing a new entry onto the
- * browser's history stack and then requests the server-rendered HTML to update the selected frame.
+ * Simulates a full page navigation to a URL by fetching he server-rendered HTML, updating the
+ * target frame and afterwards, optionally, pushing a new entry onto the browser's history stack.
  *
  * When navigating to a non-`GET` route and a history entry is pushed onto the stack, the server
  * must serve a `GET` route at this URL, otherwise the browser's reload behavior is broken because
  * such a reload always issues a GET request as opposed to using the original HTTP method.
  *
- * Note that we make the history change first to simulate the native browser behavior. In case of an
- * error or a long loading time, the URL is already updated, so a browser reload will then reload
- * the new URL instead of the old one.
- *
- * When a navigation is aborted, e.g., due to a browser reload, for which the server potentially
- * carries out side effects (which typically happens for POST requests), it is unclear whether the
- * side effects have already been carried out, will be carried out eventually, or whether the
- * request never reached the server in the first place. In this case, the HyTTS behavior for browser
- * reloads is somewhat different from the native browser behavior, which would re-issue the POST
- * request again, typically after warning the user that she is about to send the data again. With
- * HyTTS, by contrast, a GET request to the URL pushed onto the history stack is executed instead.
+ * When a navigation is aborted, e.g., due to a browser reload or another frame update, for which
+ * the server potentially carries out side effects (which typically happens for POST requests), it
+ * is unclear whether the side effects have already been carried out, will be carried out
+ * eventually, or whether the request never reached the server in the first place. In this case, the
+ * HyTTS behavior for browser reloads is somewhat different from the native browser behavior, which
+ * would re-issue the POST request again, typically after warning the user that she is about to send
+ * the data again. With HyTTS, by contrast, did not update the browser history before the request
+ * came through, so a GET request to the URL before the navigation is issues on a browser fresh.
  * Neither the browser's behavior nor HyTTS's behavior is ideal in that case, as the user has no
  * idea whether or not her "aborted" actions have already been carried out.
  *
- * If the server's response is a redirect, the redirect is followed automatically. In that case, the
- * previously pushed history entry is replaced with the new URL _after_ the redirected response is
- * fetched. This is different from the normal browser behavior, where the history stack is updated
- * _before_ requesting the redirected URL. Due to security considerations, this behavior cannot be
- * reimplemented with JavaScript.
+ * If the server's response is a redirect, the redirect is followed automatically, and, optionally,
+ * the browser's history stack is updated accordingly.
  */
 export async function navigateTo({
     href,
@@ -69,12 +63,6 @@ export async function navigateTo({
     // for the root frame, but not for all other frames.
     updateHistory ??= frameId === rootFrameId;
 
-    // Update the history immediately to simulate the native browser behavior.
-    const thisNavigationId = ++navigationId;
-    if (updateHistory) {
-        history.pushState({ [navigationIdKey]: thisNavigationId }, "", historyHref ?? href);
-    }
-
     let response: Response = undefined!;
     await updateFrame(frameId, async (frame, signal) => {
         response = await fetchFrame(frame, href, {
@@ -86,16 +74,8 @@ export async function navigateTo({
         return await extractFrameFromResponse(frame, response, signal);
     });
 
-    // For redirected responses, replace the previously pushed history entry to mimic the native
-    // browser behavior as best as we can. To prevent a race condition where multiple concurrent
-    // navigation operations overlap, we only replace the history entry if the previously pushed
-    // one is still topmost.
-    if (
-        updateHistory &&
-        response.redirected &&
-        history.state[navigationIdKey] === thisNavigationId
-    ) {
-        history.replaceState(null, "", response.url);
+    if (updateHistory) {
+        history.pushState(null, "", historyHref ?? (response.redirected ? response.url : href));
     }
 }
 
@@ -232,6 +212,3 @@ export function interceptHistoryChanges() {
         () => void navigateTo({ frameId: rootFrameId, href: location.href, httpMethod: "GET" }),
     );
 }
-
-let navigationId = 0;
-const navigationIdKey = "hyNavigationId";
