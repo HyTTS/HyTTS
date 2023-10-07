@@ -150,7 +150,7 @@ export function interceptForms() {
 
     function getForm(e: Event): [HTMLFormElement | undefined, FormOptions | undefined] {
         // The events we're interested in are either raised on the form or on one of its inputs, in
-        // which case we have to retrieve the form the input belongs.
+        // which case we have to retrieve the form the input belongs to.
         const form =
             e.target instanceof HTMLFormElement
                 ? e.target
@@ -183,7 +183,7 @@ export function createFormRequestBody(form: HTMLFormElement, additionalData?: st
         params.append("$form." + name, value as string);
     }
 
-    return params.toString() + (additionalData ? `"&${additionalData}` : "");
+    return params.toString() + (additionalData ? `&${additionalData}` : "");
 }
 
 function getFormFrameId(form: HTMLFormElement) {
