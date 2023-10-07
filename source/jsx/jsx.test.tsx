@@ -43,7 +43,7 @@ describe("jsx rendering", () => {
 
         it("renders `string` attributes", async () => {
             await testJsx(<div id="id" />, '<div id="id"></div>');
-            await testJsx(<div class="" />, '<div class=""></div>');
+            await testJsx(<div id="" />, '<div id=""></div>');
         });
 
         it("escapes `string` attributes only when necessary", async () => {
@@ -63,6 +63,36 @@ describe("jsx rendering", () => {
         it("throws for unsupported attribute types", async () => {
             await expect(() => renderToString(<div id={(() => {}) as any} />)).rejects.toThrow();
             await expect(() => renderToString(<div id={{} as any} />)).rejects.toThrow();
+        });
+
+        it("should not render class attribute when unnecessary", async () => {
+            await testJsx(<div></div>, "<div></div>");
+            await testJsx(<div class={null}></div>, "<div></div>");
+            await testJsx(<div class={undefined}></div>, "<div></div>");
+            await testJsx(<div class=""></div>, "<div></div>");
+            await testJsx(<div class={false}></div>, "<div></div>");
+            await testJsx(<div class={true}></div>, "<div></div>");
+            await testJsx(<div class={[]}></div>, "<div></div>");
+            await testJsx(<div class={[true]}></div>, "<div></div>");
+            await testJsx(<div class={[false]}></div>, "<div></div>");
+            await testJsx(<div class={[null]}></div>, "<div></div>");
+            await testJsx(<div class={[undefined]}></div>, "<div></div>");
+        });
+
+        it("should render class attribute correctly", async () => {
+            await testJsx(<div class={'a b[""]'}></div>, '<div class="a b[&quot;&quot;]"></div>');
+            await testJsx(<div class="a b"></div>, '<div class="a b"></div>');
+            await testJsx(<div class={["a", "b"]}></div>, '<div class="a b"></div>');
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+            await testJsx(<div class={[true && "a", false && "b"]}></div>, '<div class="a"></div>');
+            await testJsx(
+                <div class={["a", undefined, "b", true, false, "c"]}></div>,
+                '<div class="a b c"></div>',
+            );
+            await testJsx(
+                <div class={["a", [undefined, "b", false, [undefined, "c", false]]]}></div>,
+                '<div class="a b c"></div>',
+            );
         });
     });
 

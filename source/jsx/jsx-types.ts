@@ -589,11 +589,24 @@ export namespace JSX {
             | "treeitem";
     }
 
+    /**
+     * Allows for more complex specifications of CSS classes in JSX. `null`, `undefined`, boolean
+     * values and empty strings are not rendered at all and array elements are concatenated,
+     * separated by a space.
+     *
+     * This allows simple CSS class lists such as `<div class="whatever" />` but also more complex,
+     * dynamically computed CSS class lists such as `<div class={[condition1 && "whatever",
+     * props.class, "something"]} />`, which, assuming `condition1` is `true` and `props.class` is
+     * of type `JSX.CssClasses` with a value of `undefined`, renders `<div class="whatever
+     * something" />`.
+     */
+    export type CssClasses = boolean | string | null | undefined | CssClasses[];
+
     export interface HTMLAttributes<T extends EventTarget>
         extends AriaAttributes,
             DOMAttributes<T> {
         accessKey?: string;
-        class?: string;
+        class?: CssClasses;
         contenteditable?: boolean | "inherit";
         contextmenu?: string;
         dir?: HTMLDir;
@@ -1086,7 +1099,7 @@ export namespace JSX {
     }
 
     export interface StylableSVGAttributes {
-        class?: string;
+        class?: CssClasses;
         style?: string;
     }
 

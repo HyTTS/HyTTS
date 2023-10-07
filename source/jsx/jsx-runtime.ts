@@ -1,6 +1,7 @@
 import { isBrowserFunc, useRegisterBrowserEventHandler } from "@/jsx/browser-script";
 import { escapeString } from "@/jsx/escape-string";
 import {
+    type JSX,
     type JsxComponent,
     type JsxElement,
     type JsxExpression,
@@ -98,7 +99,12 @@ function renderProps(props: Record<string, unknown>) {
             continue;
         }
 
-        if (typeof value === "boolean" || typeof value === "number")
+        if (name === "class") {
+            const css = getClassList(value as JSX.CssClasses);
+            if (css) {
+                propsString += ` ${name}="${escapeString(css, true)}"`;
+            }
+        } else if (typeof value === "boolean" || typeof value === "number")
             propsString += ` ${name}="${value}"`;
         else if (typeof value === "string")
             propsString += ` ${name}="${escapeString(value, true)}"`;
@@ -136,6 +142,17 @@ function renderProps(props: Record<string, unknown>) {
     }
 
     return propsString;
+}
+
+function getClassList(value: JSX.CssClasses): string {
+    return typeof value === "string"
+        ? value
+        : Array.isArray(value)
+        ? value
+              .map(getClassList)
+              .filter((c) => !!c && typeof c === "string")
+              .join(" ")
+        : "";
 }
 
 /**
