@@ -94,9 +94,8 @@ async function abortPreviousUpdate(frame: Element) {
 }
 
 /**
- * Wraps the `fetch` function, raising the `hy:offline` event on the frame if the browser seems to
- * be unable to reach the server (no internet connection, server is down, ...). Returns the server's
- * response as well as the parsed HTML element representing the frame.
+ * Wraps the `fetch` function, raising the `hy:fetch-error` event on the frame if the browser seems
+ * to be unable to reach the server (no internet connection, server is down, ...).
  */
 export async function fetchFrame(frame: Element, url: string, fetchOptions: RequestInit) {
     try {
@@ -112,16 +111,21 @@ export async function fetchFrame(frame: Element, url: string, fetchOptions: Requ
                     : { "content-type": "application/x-www-form-urlencoded" }),
             },
         });
-    } catch (e: unknown) {
-        if (isNetworkError(e)) {
-            // We report an `hy:offline` error on the frame as a bubbling event; typically, there is
+    } catch (error: unknown) {
+        if (isNetworkError(error)) {
+            // We report an `hy:fetch-error` error on the frame as a bubbling event; typically, there is
             // a top-level error handler for the offline scenario.
-            frame.dispatchEvent(new CustomEvent("hy:offline", { bubbles: true, cancelable: true }));
+            frame.dispatchEvent(
+                new CustomEvent("hy:fetch-error", {
+                    bubbles: true,
+                    cancelable: true,
+                    detail: { error },
+                }),
+            );
         }
 
-        // Rethrow the error to abort the frame update. In the offline case, the typical reaction
-        // is to continue displaying the previous contents and show some sort of "offline" overlay.
-        throw e;
+        // Rethrow the error to abort the frame update.
+        throw error;
     }
 }
 
@@ -156,43 +160,58 @@ export async function extractFrameFromResponse(
     response: Response,
     signal: AbortSignal | null | undefined,
 ): Promise<Element> {
-    const document = await parseHTML(response);
+    try {
+        const document = await parseHTML(response);
 
-    signal?.throwIfAborted();
+        signal?.throwIfAborted();
 
-    const frameId = frame.getAttribute("id") ?? "";
-    const newFrameElement = document.getElementById(frameId);
+        const frameId = frame.getAttribute("id") ?? "";
+        const newFrameElement = document.getElementById(frameId);
 
-    if (!newFrameElement || newFrameElement.tagName.toLowerCase() !== "hy-frame") {
-        const updateFrameForErrorResponses = frame.dispatchEvent(
-            new CustomEvent("hy:frame-missing", {
+        if (!newFrameElement || newFrameElement.tagName.toLowerCase() !== "hy-frame") {
+            const updateFrameForErrorResponses = frame.dispatchEvent(
+                new CustomEvent("hy:frame-missing", {
+                    bubbles: true,
+                    cancelable: true,
+                    detail: { response, document },
+                }),
+            );
+
+            const message = `Frame '${frameId}' not found in the server's response.`;
+            if (updateFrameForErrorResponses && response.status >= 300) {
+                log.warn(message);
+
+                // The default behavior is to show the entire server response within the frame.
+                // For reconciliation to work correctly later on, we have to clone the current
+                // frame's node first and copy the new documents body's children over. That way,
+                // the frame remains in the DOM and reconciliation replaces all of its contents
+                // with the server response.
+                const newFrame = frame.cloneNode() as HTMLElement;
+                newFrame.replaceChildren(...document.body.children);
+                return newFrame;
+            } else {
+                throw new Error(message);
+            }
+        }
+
+        return newFrameElement;
+    } catch (error: unknown) {
+        // We report an `hy:fetch-error` error on the frame as a bubbling event; typically, there is
+        // a top-level error handler for all fetch-related problems.
+        frame.dispatchEvent(
+            new CustomEvent("hy:fetch-error", {
                 bubbles: true,
                 cancelable: true,
-                detail: { response, document },
+                detail: { error },
             }),
         );
 
-        const message = `Frame '${frameId}' not found in the server's response.`;
-        if (updateFrameForErrorResponses && response.status >= 300) {
-            log.warn(message);
-
-            // The default behavior is to show the entire server response within the frame.
-            // For reconciliation to work correctly later on, we have to clone the current
-            // frame's node first and copy the new documents body's children over. That way,
-            // the frame remains in the DOM and reconciliation replaces all of its contents
-            // with the server response.
-            const newFrame = frame.cloneNode() as HTMLElement;
-            newFrame.replaceChildren(...document.body.children);
-            return newFrame;
-        } else {
-            throw new Error(message);
-        }
+        // Rethrow the error to abort the frame update.
+        throw error;
     }
-
-    return newFrameElement;
 }
 
-/** Used to parse the HTML returned from the server. */
+/** Parses the HTML returned from the server. */
 const parseHTML = (() => {
     const parser = new DOMParser();
     return async (response: Response) => {

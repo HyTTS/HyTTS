@@ -14,7 +14,7 @@ export type SomeFormSchema = ZodType<Record<string, unknown>, ZodTypeDef, any>;
 
 export type FormProps<FormState extends Record<string, unknown>> = Omit<
     JSX.FormHTMLAttributes<HTMLFormElement>,
-    "id" | "method" | "action" | "novalidate"
+    "id" | "name" | "method" | "action" | "novalidate"
 > & {
     /**
      * A reference to the POST route that handles the form's submission. Used regardless of whether
@@ -46,6 +46,7 @@ export function Form<FormStateSchema extends SomeFormSchema>({
         <form
             {...props}
             id={formId}
+            name={formId}
             method="post"
             action={onSubmit.url}
             data-hy-validate={onValidate?.url ?? onSubmit.url}
@@ -120,11 +121,18 @@ export function createForm<FormStateSchema extends SomeFormSchema>(
     }
 
     FormContext.updateState = (
-        updateState: (state: PartialFormState) => PartialFormState,
+        updateState: (state: PartialFormState) => PartialFormState | Promise<PartialFormState>,
     ): FormElement<InputFormState> => {
         return (
             <WithPartialFormState
-                Content={({ formState }) => <FormContext formState={updateState(formState)} />}
+                Content={async ({ formState }) => {
+                    const updatedState = await updateState(formState);
+                    if (!(await getSchema()).safeParse(updatedState).success) {
+                        useHttpStatusCode(422);
+                    }
+
+                    return <FormContext formState={updatedState} />;
+                }}
             />
         ) as any;
     };

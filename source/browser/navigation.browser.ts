@@ -224,6 +224,12 @@ export function interceptClicks() {
 export function interceptHistoryChanges() {
     window.addEventListener(
         "popstate",
-        () => void navigateTo({ frameId: rootFrameId, href: location.href, httpMethod: "GET" }),
+        () =>
+            void navigateTo({
+                httpMethod: "GET",
+                href: location.href,
+                updateHistory: false,
+                frameId: rootFrameId,
+            }),
     );
 }
