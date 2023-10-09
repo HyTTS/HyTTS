@@ -1,5 +1,5 @@
 import { addEventListener } from "$/events.browser";
-import { interceptForms, submitForm } from "$/form.browser";
+import { interceptForms, submitForm, updateForm } from "$/form.browser";
 import { updateFrame } from "$/frame.browser";
 import { interceptClicks, interceptHistoryChanges, navigateTo } from "$/navigation.browser";
 
@@ -12,6 +12,7 @@ const externalApi = {
     updateFrame,
     addEventListener,
     submitForm,
+    updateForm,
 } as const;
 
 declare global {
