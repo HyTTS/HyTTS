@@ -1,5 +1,13 @@
 {
-    "include": ["jest.setup.ts", "./source/**/*.ts", "./source/**/*.tsx"],
+    "include": [
+        "./examples/**/*.ts",
+        "./examples/**/*.tsx",
+        "./e2e/**/*.ts",
+        "./source/**/*.ts",
+        "./source/**/*.tsx",
+        "jest.setup.ts",
+        "playwright.config.ts"
+    ],
     "compilerOptions": {
         "lib": ["DOM", "DOM.Iterable", "ES2022"],
         "isolatedModules": true,
@@ -25,7 +33,8 @@
         "baseUrl": ".",
         "paths": {
             "@/*": ["./source/*"],
-            "$/*": ["./source/browser/*"]
+            "$/*": ["./source/browser/*"],
+            "@hytts/hytts": ["./source/index.ts"]
         },
         "outDir": "./tmp/typescript/",
         "tsBuildInfoFile": "./tmp/typescript/HyTTS.tsbuildinfo",

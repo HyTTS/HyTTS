@@ -72,7 +72,10 @@ module.exports = {
         "no-restricted-imports": [
             "error",
             {
-                paths: [{ name: "@/index", message: "Import from the source file instead." }],
+                paths: [
+                    { name: "@/index", message: "Import from the source file instead." },
+                    { name: "@hytts/hytts", message: "Import from the source file instead." },
+                ],
             },
         ],
         "no-relative-import-paths/no-relative-import-paths": ["warn", { allowSameFolder: true }],

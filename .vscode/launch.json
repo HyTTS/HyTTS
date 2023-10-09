@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "attach",
+            "name": "Debug Examples",
+            "address": "localhost",
+            "port": 3702,
+            "trace": true,
+            "cwd": "${workspaceFolder}/examples",
+            "sourceMaps": true,
+            "showAsyncStacks": true
+        }
+    ]
+}

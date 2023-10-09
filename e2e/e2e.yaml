@@ -1,0 +1,11 @@
+version: "3.8"
+services:
+    playwright:
+        hostname: "hy-playwright"
+        image: "mcr.microsoft.com/playwright:v1.38.0-jammy"
+        working_dir: "/home/pwuser"
+        command: "npx -y playwright run-server --port 3701"
+        ports:
+            - "3701:3701"
+        extra_hosts:
+            - "hytts:host-gateway"
