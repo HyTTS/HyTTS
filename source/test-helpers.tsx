@@ -1,5 +1,6 @@
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
+import type { Page, Response as PlaywrightResponse } from "@playwright/test";
 import express, { type Express, text } from "express";
 import { createExpressMiddleware } from "@/routing/express-middleware";
 import { getHrefs, type Href, type HrefCreator } from "@/routing/href";
@@ -26,7 +27,7 @@ async function testApp<TReturn>(
             const server = createServer(app).listen(0, () => resolve(server));
         });
         const port = (server.address() as AddressInfo).port;
-        const baseUrl = `http://localhost:${port}`;
+        const baseUrl = `http://${process.env.IN_CONTAINER ? "hytts" : "127.0.0.1"}:${port}`;
 
         return await callback((url, init) => fetch(`${baseUrl}${url}`, init), baseUrl);
     } finally {
@@ -34,6 +35,21 @@ async function testApp<TReturn>(
         // ports in all concurrent and subsequent tests.
         server?.close();
     }
+}
+
+/** Configures an express app that serves the given `routes`. */
+function createExpressApp<T extends RoutesComponent<any>>(routes: T) {
+    const app = express();
+    app.set("query parser", (queryString: string) => queryString);
+    app.use(text({ type: "application/x-www-form-urlencoded" }));
+    app.use(
+        createExpressMiddleware(
+            <Router routes={routes} />,
+            (error) => `fatal-error-callback: ${error}`,
+        ),
+    );
+
+    return app;
 }
 
 /**
@@ -47,15 +63,7 @@ export function runTestApp<T extends RoutesComponent<any>>(
         fetch: (href: Href<any, any>, headers?: HeadersInit) => Promise<Response>,
     ) => Promise<void>,
 ) {
-    const app = express();
-    app.set("query parser", (queryString: string) => queryString);
-    app.use(text({ type: "application/x-www-form-urlencoded" }));
-    app.use(
-        createExpressMiddleware(
-            <Router routes={routes} />,
-            (error) => `fatal-error-callback: ${error}`,
-        ),
-    );
+    const app = createExpressApp(routes);
 
     return testApp(app, (fetch) =>
         useApp(getHrefs(routes), (href, headers) =>
@@ -74,5 +82,25 @@ export function runTestApp<T extends RoutesComponent<any>>(
                       },
             ),
         ),
+    );
+}
+
+/**
+ * Starts an Express app for E2E testing purposes based on the given `routes`. Provides the Hrefs
+ * for the routes as well as a `goto` function that should be used instead of Playwright's
+ * `page.goto`.
+ */
+export function runE2eTestApp<T extends RoutesComponent<any>>(
+    page: Page,
+    routes: T,
+    useApp: (
+        goto: (href: Href<"GET">) => Promise<PlaywrightResponse | null>,
+        href: HrefCreator<T>,
+    ) => Promise<void>,
+) {
+    const app = createExpressApp(routes);
+
+    return testApp(app, (_fetch, baseUrl) =>
+        useApp((href) => page.goto(`${baseUrl}${href.url}`), getHrefs(routes)),
     );
 }

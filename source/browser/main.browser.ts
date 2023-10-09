@@ -3,19 +3,17 @@ import { interceptForms, submitForm } from "$/form.browser";
 import { updateFrame } from "$/frame.browser";
 import { interceptClicks, interceptHistoryChanges, navigateTo } from "$/navigation.browser";
 
-interceptClicks();
-interceptForms();
-interceptHistoryChanges();
+export function initialize() {
+    (window as any).hy = externalApi;
 
-const externalApi = {
+    interceptClicks();
+    interceptForms();
+    interceptHistoryChanges();
+}
+
+export const externalApi = {
     navigateTo,
     updateFrame,
     addEventListener,
     submitForm,
 } as const;
-
-declare global {
-    const hy: typeof externalApi;
-}
-
-(window as any).hy = externalApi;

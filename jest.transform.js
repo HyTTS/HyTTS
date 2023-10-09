@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 
-const { transformSync } = require("esbuild");
 const path = require("path");
+const { transformSync } = require("esbuild");
 
 const loaders = ["js", "jsx", "ts", "tsx", "json"];
 
