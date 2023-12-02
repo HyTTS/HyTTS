@@ -69,8 +69,8 @@ export function jsxs<TProps extends Record<string, unknown> = {}>(
                 return !contentOrPromise
                     ? ""
                     : typeof contentOrPromise === "string"
-                    ? contentOrPromise
-                    : await contentOrPromise;
+                      ? contentOrPromise
+                      : await contentOrPromise;
             })();
         });
     }
@@ -148,11 +148,11 @@ function getClassList(value: JSX.CssClasses): string {
     return typeof value === "string"
         ? value
         : Array.isArray(value)
-        ? value
-              .map(getClassList)
-              .filter((c) => !!c && typeof c === "string")
-              .join(" ")
-        : "";
+          ? value
+                .map(getClassList)
+                .filter((c) => !!c && typeof c === "string")
+                .join(" ")
+          : "";
 }
 
 /**

@@ -117,27 +117,27 @@ type CollectRoutesFromRouterDefinition<
     ? Routes[Key] extends RouteComponent<infer Params, infer Form>
         ? [Method, `${Method} ${CombinePaths<Path, SubPath>}`, PathParams, Params, FormValues<Form>]
         : Routes[Key] extends FormComponent<infer Form>
-        ? [Method, `${Method} ${CombinePaths<Path, SubPath>}`, PathParams, {}, FormValues<Form>]
-        : [Method, `${Method} ${CombinePaths<Path, SubPath>}`, PathParams, {}, FormValues<{}>]
+          ? [Method, `${Method} ${CombinePaths<Path, SubPath>}`, PathParams, {}, FormValues<Form>]
+          : [Method, `${Method} ${CombinePaths<Path, SubPath>}`, PathParams, {}, FormValues<{}>]
     : Key extends `/:${infer ParamPath}`
-    ? Routes[Key] extends ParamComponent<infer Param, infer Sub>
-        ? CollectRoutesFromRouter<
-              Sub,
-              CombinePaths<Path, `:${ParamPath}`>,
-              PathParams & { [K in ParamPath]: Param }
-          >
-        : never
-    : Key extends `/${infer SubPath}`
-    ? CollectRoutesFromRouter<Routes[Key], CombinePaths<Path, SubPath>, PathParams>
-    : never;
+      ? Routes[Key] extends ParamComponent<infer Param, infer Sub>
+          ? CollectRoutesFromRouter<
+                Sub,
+                CombinePaths<Path, `:${ParamPath}`>,
+                PathParams & { [K in ParamPath]: Param }
+            >
+          : never
+      : Key extends `/${infer SubPath}`
+        ? CollectRoutesFromRouter<Routes[Key], CombinePaths<Path, SubPath>, PathParams>
+        : never;
 
 type CombinePaths<Path extends string, SubPath extends string> = Path extends `${"" | "/"}`
     ? SubPath extends ""
         ? "/"
         : `/${SubPath}`
     : SubPath extends ""
-    ? Path
-    : `${Path}/${SubPath}`;
+      ? Path
+      : `${Path}/${SubPath}`;
 
 type ToHrefLookup<
     RouteInfo extends [
@@ -154,8 +154,8 @@ type ToHrefLookup<
                 ? []
                 : [routeParams: T[3]]
             : keyof T[3] extends never
-            ? [pathParams: T[2]]
-            : [pathParams: T[2], routeParams: T[3]];
+              ? [pathParams: T[2]]
+              : [pathParams: T[2], routeParams: T[3]];
         method: T[0];
         formState: T[4];
     };
