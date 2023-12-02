@@ -223,8 +223,8 @@ export function interceptForms() {
             e.target instanceof HTMLFormElement
                 ? e.target
                 : isFormField(e.target)
-                ? e.target.form
-                : undefined;
+                  ? e.target.form
+                  : undefined;
 
         const options = form?.dataset as FormOptions | undefined;
 

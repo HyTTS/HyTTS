@@ -12,20 +12,20 @@ export type RoutesDefinition<T extends Record<string, unknown>> = {
     readonly [Key in keyof T & string]: Key extends `${string}/${string}/${string}`
         ? "ERROR: Path segments cannot contain slashes except at the start."
         : Key extends `${`${HttpMethod} ` | ""}/${string} ${string}`
-        ? "ERROR: Path segments cannot contain spaces."
-        : Key extends `/:${infer Path}`
-        ? Path extends `${string}:${string}`
-            ? "ERROR: Path parameters cannot contain colons except at the start."
-            : ParamComponent<any, any>
-        : Key extends `/${infer Path}`
-        ? Path extends `${string}:${string}`
-            ? "ERROR: Colons are not allowed in a path segment."
-            : RoutesComponent<any>
-        : Key extends `${HttpMethod} /${infer Path}`
-        ? Path extends `${string}:${string}`
-            ? "ERROR: Colons are not allowed in a path segment."
-            : JsxComponent | FormComponent<any> | RouteComponent<any, any>
-        : "ERROR: Properties must start with '{HttpMethod} /' or just '/'.";
+          ? "ERROR: Path segments cannot contain spaces."
+          : Key extends `/:${infer Path}`
+            ? Path extends `${string}:${string}`
+                ? "ERROR: Path parameters cannot contain colons except at the start."
+                : ParamComponent<any, any>
+            : Key extends `/${infer Path}`
+              ? Path extends `${string}:${string}`
+                  ? "ERROR: Colons are not allowed in a path segment."
+                  : RoutesComponent<any>
+              : Key extends `${HttpMethod} /${infer Path}`
+                ? Path extends `${string}:${string}`
+                    ? "ERROR: Colons are not allowed in a path segment."
+                    : JsxComponent | FormComponent<any> | RouteComponent<any, any>
+                : "ERROR: Properties must start with '{HttpMethod} /' or just '/'.";
 };
 
 const routesSymbol = Symbol();
@@ -116,10 +116,10 @@ export function createRouter<Meta extends Record<string, unknown>>(
         let symbol = is(routesSymbol, nested)
             ? routesSymbol
             : is(routeSymbol, nested)
-            ? routeSymbol
-            : is(paramSymbol, nested)
-            ? paramSymbol
-            : undefined;
+              ? routeSymbol
+              : is(paramSymbol, nested)
+                ? paramSymbol
+                : undefined;
 
         if (!symbol) {
             symbol = routeSymbol;

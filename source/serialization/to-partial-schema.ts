@@ -120,29 +120,29 @@ export function toPartialSchema<T extends ZodType>(schema: T): ToPartialSchema<T
 export type ToPartialSchema<T extends ZodType> = T extends ZodArray<infer U, infer C>
     ? ZodArray<ToPartialSchema<U>, C>
     : T extends ZodObject<infer S extends ZodRawShape, infer U, infer C>
-    ? ZodObject<{ [K in keyof S]: ToPartialSchema<S[K]> }, U, C>
-    : T extends ZodNullable<infer U>
-    ? ZodNullable<ToPartialSchema<U>>
-    : T extends ZodDefault<infer U>
-    ? ZodDefault<ToPartialSchema<U>>
-    : T extends ZodEffects<infer U>
-    ? ZodUnion<[ToPartialSchema<U>, ZodString]>
-    : T extends ZodOptional<infer U>
-    ? ZodOptional<ToPartialSchema<U>>
-    : T extends ZodIntersection<infer U, infer V>
-    ? ZodIntersection<ToPartialSchema<U>, ToPartialSchema<V>>
-    : T extends ZodReadonly<infer I>
-    ? ZodReadonly<ToPartialSchema<I>>
-    : T extends ZodUnion<infer U>
-    ? ZodUnion<ConvertUnionCases<U>>
-    : T extends ZodString
-    ? ZodString
-    : T extends ZodType<Record<string, unknown>> // this case covers generic code over "object-like" ZodTypes
-    ? T
-    : ZodUnion<[T, ZodString]>;
+      ? ZodObject<{ [K in keyof S]: ToPartialSchema<S[K]> }, U, C>
+      : T extends ZodNullable<infer U>
+        ? ZodNullable<ToPartialSchema<U>>
+        : T extends ZodDefault<infer U>
+          ? ZodDefault<ToPartialSchema<U>>
+          : T extends ZodEffects<infer U>
+            ? ZodUnion<[ToPartialSchema<U>, ZodString]>
+            : T extends ZodOptional<infer U>
+              ? ZodOptional<ToPartialSchema<U>>
+              : T extends ZodIntersection<infer U, infer V>
+                ? ZodIntersection<ToPartialSchema<U>, ToPartialSchema<V>>
+                : T extends ZodReadonly<infer I>
+                  ? ZodReadonly<ToPartialSchema<I>>
+                  : T extends ZodUnion<infer U>
+                    ? ZodUnion<ConvertUnionCases<U>>
+                    : T extends ZodString
+                      ? ZodString
+                      : T extends ZodType<Record<string, unknown>> // this case covers generic code over "object-like" ZodTypes
+                        ? T
+                        : ZodUnion<[T, ZodString]>;
 
 type ConvertUnionCases<T extends readonly ZodType[]> = T extends [infer U extends ZodType]
     ? [ToPartialSchema<U>]
     : T extends [infer U extends ZodType, ...infer V extends ZodType[]]
-    ? [ToPartialSchema<U>, ...ConvertUnionCases<V>]
-    : never;
+      ? [ToPartialSchema<U>, ...ConvertUnionCases<V>]
+      : never;
