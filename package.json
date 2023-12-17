@@ -30,7 +30,7 @@
         "build:format": "yarn prettier --ignore-path ./.prettierignore --write --config ./.prettierrc ./dist",
         "build:server": "tsup ./source/index.ts --dts --format=cjs --target=node18 --env.NODE_ENV production && echo 'export { JSX } from \"./index\";' > ./dist/jsx-runtime.d.ts",
         "build": "rm -rf ./dist && mkdir ./dist && yarn concurrently --names srv,brw,cpy \"yarn build:server\" \"yarn build:browser\" \"yarn build:files\" && yarn build:format",
-        "e2e:container": "COMPOSE_PROJECT_NAME=hytts COMPOSE_FILE=./e2e/e2e.yaml docker compose up --build --pull always --remove-orphans --detach --timeout 0",
+        "e2e:container": "COMPOSE_PROJECT_NAME=hytts COMPOSE_FILE=./e2e/docker-compose.yml docker compose up --build --pull always --remove-orphans --detach --timeout 0",
         "e2e": "IN_CONTAINER=1 PW_TEST_CONNECT_WS_ENDPOINT=ws://127.0.0.1:3701/ playwright test",
         "format:check": "prettier --check ./source",
         "format:fix": "prettier --write --log-level warn ./source",
