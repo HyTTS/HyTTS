@@ -1,5 +1,12 @@
 {
-    "include": ["jest.setup.ts", "./source/**/*.ts", "./source/**/*.tsx"],
+    "include": [
+        "./e2e/**/*.ts",
+        "./e2e/**/*.tsx",
+        "./source/**/*.ts",
+        "./source/**/*.tsx",
+        "./*.js",
+        "./*.ts"
+    ],
     "compilerOptions": {
         "lib": ["DOM", "DOM.Iterable", "ES2022"],
         "isolatedModules": true,

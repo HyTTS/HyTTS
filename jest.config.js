@@ -3,7 +3,8 @@
  * https://jestjs.io/docs/en/configuration.html
  */
 
-/** @type {import('jest').Config} */
+/** @type {import("jest").Config} */
+// eslint-disable-next-line no-undef
 module.exports = {
     moduleNameMapper: {
         "@/(.*)": "<rootDir>/source/$1",
