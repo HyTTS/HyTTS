@@ -12,7 +12,7 @@ export type ErrorViewProps = {
 };
 
 export type ErrorBoundaryProps = PropsWithChildren<{
-    /** The component that is rendered if an error was thrown while rendering of the children. */
+    /** The component that is rendered if an error was thrown while rendering the children. */
     readonly ErrorView: JsxComponent<ErrorViewProps>;
 }>;
 

@@ -45,78 +45,14 @@ export function BrowserScriptRenderer(props: PropsWithChildren) {
     // Contains the browser scripts or functions that have been registered while the renderer's
     // children are rendered. We have to generate the appropriate browser code for these scripts
     // after all children's output.
-    const registeredScripts = new Set<BrowserScript | BrowserFunc<any>>();
+    const scripts = new Set<BrowserScript | BrowserFunc<any>>();
 
     return scriptContext.Provider({
-        value: (script) => registeredScripts.add(script),
+        value: (script) => scripts.add(script),
         children: toJsxExpression(
-            async () =>
-                (await renderChildren(props.children)) +
-                (registeredScripts.size > 0
-                    ? `<script nonce="${useCspNonce()}" type="text/javascript">${generateCode()}</script>`
-                    : ""),
+            async () => (await renderChildren(props.children)) + emitCode(scripts),
         ),
     });
-
-    function generateCode() {
-        // The individual statements that we are going to render, i.e., variable declarations and
-        // assignments, IIFEs, etc.
-        const statements: string[] = [];
-
-        // Generates names for JavaScript variables that are unique within this script renderer.
-        const generateName = (() => {
-            let index = 0;
-            return () => `$${index++}`;
-        })();
-
-        // We deduplicate functions based on the string representation of their code. This avoids
-        // writing the same function again and again just because it has a different closure. This
-        // could happen, for example, if the same function is registered in a loop with the loop
-        // index being part of the captured variables.
-        const renderFunction = (() => {
-            // This map tracks which unique name is used to refer to a given function, regardless
-            // of its closure. We don't deduplicate closures, as they are expected to be mostly
-            // different each time they are instantiated.
-            const functions = new Map</* code: */ string, /* variableName: */ string>();
-
-            return (script: BrowserFunc<any>) => {
-                const serializedScript = script.serializeScript(renderFunction);
-                let functionName = functions.get(serializedScript.script);
-
-                if (!functionName) {
-                    functionName = generateName();
-                    functions.set(serializedScript.script, functionName);
-                    statements.push(`const ${functionName}=${serializedScript.script};`);
-                }
-
-                return `(${functionName})(${serializedScript.context})`;
-            };
-        })();
-
-        // We cannot deduplicate scripts, as they typically have observable side effects.
-        function renderScript(script: BrowserScript) {
-            const serializedScript = script.serializeScript(renderFunction);
-            if (!script.hasContext) {
-                if (serializedScript.context) {
-                    throw new Error("Encountered unexpected closure context.");
-                }
-                statements.push(serializedScript.script + ";");
-            } else {
-                statements.push(`(${serializedScript.script})(${serializedScript.context});`);
-            }
-        }
-
-        // Renders all registered scripts, which in turn transitively render their dependencies.
-        registeredScripts.forEach((script) => {
-            if (isBrowserFunc(script)) renderFunction(script);
-            else if (isBrowserScript(script)) renderScript(script);
-            else throw new Error("Unknown script type.");
-        });
-
-        // We use an IIFE for all of this renderer's code so that we can be sure that all generated
-        // names are unique within the context of this renderer and don't leak to the global scope.
-        return `(()=>{${statements.join("").replaceAll("</script", "<\\/script")}})()`;
-    }
 }
 
 export function createBrowserScript<TContext extends CapturedVariable[]>(
@@ -151,20 +87,24 @@ export function createEventHandler<
     return createBrowserFunc(handler, ...context);
 }
 
+export type ScriptProps = {
+    readonly script: BrowserScript;
+};
+
 /**
- * Registers the given browser script so that the appropriate browser-side JavaScript code gets
- * emitted. The emitted code also includes all transitively referenced browser functions.
+ * Renders the given browser script, emitting the corresponding browser-side JavaScript code. The
+ * emitted code also includes all transitively referenced browser functions. The given browser
+ * script is emitted immediately in its own `<script>` tag; event handlers, on the other hand, are
+ * collected and emitted at the end of the enclosing frame. It is thus fine to rely on the emitted
+ * `<script>`'s position in the DOM, e.g., to retrieve the previous or enclosing DOM element.
  */
-export function useRegisterBrowserScript(script: BrowserScript) {
-    useContext(scriptContext)(script);
+export function Script(props: ScriptProps) {
+    return toJsxExpression(() => emitCode(new Set([props.script])));
 }
 
 /**
  * Registers the given event handler to be invoked when the event of the given event name is fired
- * on the element with the given id. This function is typically only used by infrastructure code;
- * prefer to use the JSX `browser:*` event handlers in most cases, i.e.:
- *
- *      <div browser:onclick={createEventHandler(...)} />
+ * on the element with the given id.
  */
 export function useRegisterBrowserEventHandler(
     id: string,
@@ -179,6 +119,22 @@ export function useRegisterBrowserEventHandler(
             context: "",
         }),
     });
+}
+
+export type HandlerProps = {
+    readonly id: string;
+    readonly eventName: string;
+    readonly handler: BrowserFunc<(e: EventArgs) => void>;
+};
+
+/**
+ * Registers the given event handler so that the corresponding browser-side JavaScript code will be
+ * emitted at the end of the enclosing frame. The emitted code also includes all transitively
+ * referenced browser functions.
+ */
+export function Handler(props: HandlerProps) {
+    useRegisterBrowserEventHandler(props.id, props.eventName, props.handler);
+    return null;
 }
 
 /** Checks if the given value is a browser script. */
@@ -220,8 +176,70 @@ type SerializedScript = {
     readonly context: string;
 };
 
+type ScriptSet = Set<BrowserScript | BrowserFunc<any>>;
 type SerializeScript = (registerFunction: (func: BrowserFunc<any>) => string) => SerializedScript;
 
 const scriptContext = createContext<(script: BrowserScript | BrowserFunc<any>) => void>({
-    name: "browser script renderer",
+    name: "browser scripts",
 });
+
+function emitCode(scripts: ScriptSet) {
+    // The individual statements that we are going to render, i.e., variable declarations and
+    // assignments, IIFEs, etc.
+    const statements: string[] = [];
+
+    // Generates names for JavaScript variables that are unique within this script renderer.
+    const generateName = (() => {
+        let index = 0;
+        return () => `$${index++}`;
+    })();
+
+    // We deduplicate functions based on the string representation of their code. This avoids
+    // writing the same function again and again just because it has a different closure. This
+    // could happen, for example, if the same function is registered in a loop with the loop
+    // index being part of the captured variables.
+    const renderFunction = (() => {
+        // This map tracks which unique name is used to refer to a given function, regardless
+        // of its closure. We don't deduplicate closures, as they are expected to be mostly
+        // different each time they are instantiated.
+        const functions = new Map</* code: */ string, /* variableName: */ string>();
+
+        return (script: BrowserFunc<any>) => {
+            const serializedScript = script.serializeScript(renderFunction);
+            let functionName = functions.get(serializedScript.script);
+
+            if (!functionName) {
+                functionName = generateName();
+                functions.set(serializedScript.script, functionName);
+                statements.push(`const ${functionName}=${serializedScript.script};`);
+            }
+
+            return `(${functionName})(${serializedScript.context})`;
+        };
+    })();
+
+    // We cannot deduplicate scripts, as they typically have observable side effects.
+    function renderScript(script: BrowserScript) {
+        const serializedScript = script.serializeScript(renderFunction);
+        if (!script.hasContext) {
+            if (serializedScript.context) {
+                throw new Error("Encountered unexpected closure context.");
+            }
+            statements.push(serializedScript.script + ";");
+        } else {
+            statements.push(`(${serializedScript.script})(${serializedScript.context});`);
+        }
+    }
+
+    // Renders all registered scripts, which in turn transitively render their dependencies.
+    scripts.forEach((script) => {
+        if (isBrowserFunc(script)) renderFunction(script);
+        else if (isBrowserScript(script)) renderScript(script);
+        else throw new Error("Unknown script type.");
+    });
+
+    // We use an IIFE for all of this renderer's code so that we can be sure that all generated
+    // names are unique within the context of this emitted code block and don't leak to the global scope.
+    const code = `(()=>{${statements.join("").replaceAll("</script", "<\\/script")}})()`;
+    return scripts.size > 0 ? `<script nonce="${useCspNonce()}">${code}</script>` : "";
+}

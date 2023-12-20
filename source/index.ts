@@ -2,12 +2,13 @@ export {
     type BrowserFunc,
     type BrowserScript,
     type CapturedVariable,
-    BrowserScriptRenderer,
+    type HandlerProps,
+    type ScriptProps,
     createBrowserFunc,
     createBrowserScript,
     createEventHandler,
-    useRegisterBrowserEventHandler,
-    useRegisterBrowserScript,
+    Handler,
+    Script,
 } from "@/jsx/browser-script";
 
 export {

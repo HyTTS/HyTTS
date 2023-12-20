@@ -48,10 +48,7 @@ export function createFrame(frameId: string): Frame {
     return frame;
 }
 
-/**
- * Provides access to the metadata of frame that contains the caller within the component tree. The
- * document's body is the top-most frame element.
- */
+/** Provides access to the metadata of the caller's nearest ancestor frame. */
 export function useFrameMetadata() {
     return useContext(frameContext);
 }
