@@ -15,6 +15,7 @@ import type { Router } from "@/routing/router";
  *
  *   - A top-level {@link ErrorBoundary} that catches all errors during JSX rendering.
  *   - A {@link Router} component somewhere within the component tree.
+ *   - A component that injects all relevant contexts to access other services, the database, etc.
  *
  * @param onFatalError Generates the error HTML that is returned to the browser when a fatal error
  *   occurs, i.e., when there are errors both during normal JSX rendering and while rendering the

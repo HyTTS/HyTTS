@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { createRouter } from "@/routing/router";
+import { routes } from "@/routing/router";
 import { runE2eTestApp } from "@/test-helpers";
 
 test("has title", async ({ page }) => {
@@ -14,5 +14,3 @@ test("has title", async ({ page }) => {
         },
     );
 });
-
-const { routes } = createRouter<{}>({});

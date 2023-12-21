@@ -10,7 +10,7 @@ import {
     useUrlSearchParams,
 } from "@/http/http-context";
 import { getHrefs, type Href } from "@/routing/href";
-import { createRouter } from "@/routing/router";
+import { route, routes } from "@/routing/router";
 import { runTestApp } from "@/test-helpers";
 
 describe("http-context", () => {
@@ -19,7 +19,7 @@ describe("http-context", () => {
             "GET /a": () => <Redirect href={href("GET /b")} />,
             "GET /b": () => <>b</>,
         });
-        const href = getHrefs(rs);
+        const href = getHrefs<typeof rs>();
 
         return runTestApp(rs, async (href, fetch) => {
             const routeResponse = await fetch(href("GET /a"));
@@ -155,5 +155,3 @@ describe("http-context", () => {
             },
         ));
 });
-
-const { routes, route } = createRouter({});

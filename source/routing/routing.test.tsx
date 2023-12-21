@@ -4,13 +4,13 @@ import { createForm, useFormProperty } from "@/form/form";
 import { HttpResponse, Redirect } from "@/http/http-context";
 import { renderToString } from "@/jsx/jsx-runtime";
 import { type FormValues, getHrefs, type Href } from "@/routing/href";
-import { createRouter, Router, type RoutesComponent } from "@/routing/router";
+import { lazy, param, route, Router, routes, type RoutesComponent } from "@/routing/router";
 import { zLocalDate } from "@/serialization/date-time";
 
 describe("routing", () => {
     it("allows routes for multiple HTTP methods", async () => {
         const rs = routes({ "GET /": () => <>g</>, "POST /": () => <>p</> });
-        const href = getHrefs(rs);
+        const href = getHrefs<typeof rs>();
 
         expect(href("GET /").body).toBeUndefined();
         expect(href("GET /").url).toBe("/");
@@ -39,7 +39,7 @@ describe("routing", () => {
 
     it("allows multiple different routes", async () => {
         const rs = routes({ "GET /a": () => <>a</>, "GET /b": () => <>b</> });
-        const href = getHrefs(rs);
+        const href = getHrefs<typeof rs>();
 
         expect(href("GET /a").body).toBeUndefined();
         expect(href("GET /a").url).toBe("/a");
@@ -220,7 +220,7 @@ describe("routing", () => {
                 "test",
             ),
         });
-        const href = getHrefs(rs);
+        const href = getHrefs<typeof rs>();
 
         expect(href("POST /").body).toBeUndefined();
         expect(href("POST /").url).toBe("/");
@@ -271,7 +271,7 @@ describe("routing", () => {
                 );
             }),
         });
-        const href = getHrefs(rs);
+        const href = getHrefs<typeof rs>();
 
         expect(href("GET /component").body).toBeUndefined();
         expect(href("GET /component").url).toBe("/component");
@@ -353,9 +353,7 @@ describe("routing", () => {
                 }),
             ),
         });
-        const href = getHrefs(rs);
-
-        expect(() => href("GET /:n/:s/sn", { n: 1, s: "" })).toThrow("for path parameter 's'.");
+        const href = getHrefs<typeof rs>();
 
         expect(href("GET /:n/n-only", { n: 18 }).body).toBeUndefined();
         expect(href("GET /:n/n-only", { n: 18 }).url).toBe("/18/n-only");
@@ -367,6 +365,9 @@ describe("routing", () => {
         expect(href("GET /:n/:s/sn", { s: "get?", n: 17 }).method).toBe("GET");
         expect(await render(rs, href("GET /:n/:s/sn", { s: "get?", n: 17 }))).toBe("get? 17");
         expect(await render(rs, href("GET /:n/:s/sn", { s: "test", n: 31 }))).toBe("test 31");
+        await expect(() => render(rs, href("GET /:n/:s/sn", { s: "", n: 31 }))).rejects.toThrow(
+            "NotFound",
+        );
 
         // @ts-expect-error
         href("GET /:n/n-only");
@@ -419,7 +420,7 @@ describe("routing", () => {
                 }),
             ),
         });
-        const href = getHrefs(rs);
+        const href = getHrefs<typeof rs>();
 
         expect(href("GET /:n", { n: 18 }, { s: "test?" }).body).toBeUndefined();
         expect(href("GET /:n", { n: 18 }, { s: "test?" }).url).toBe("/18?s=test%3F");
@@ -466,9 +467,104 @@ describe("routing", () => {
                     }),
             ),
         });
-        const href = getHrefs(rs);
+        const href = getHrefs<typeof rs>();
 
         expect(await render(rs, href("GET /:n", { n: 18 }, { s: "test?" }))).toBe("GET test? 18");
+    });
+
+    it("supports optional path params", async () => {
+        const rs = routes({
+            "/:n?": param(z.string().max(4).optional(), (n) =>
+                routes({
+                    "GET /": () => {
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                        const shouldBeString: () => string | undefined = n;
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                        const m: typeof n = () => undefined;
+
+                        return <>n: {n() ?? "undefined"}</>;
+                    },
+                    "/:m?": param(z.string().optional(), (m) =>
+                        routes({
+                            "GET /": () => (
+                                <>
+                                    n: {n()} m: {m()}
+                                </>
+                            ),
+                        }),
+                    ),
+                }),
+            ),
+            "/default": routes({
+                "/:n?": param(z.string().max(4).default("x"), (n) =>
+                    routes({
+                        "GET /": () => {
+                            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                            const shouldBeString: () => string = n;
+
+                            return <>n: {n()}</>;
+                        },
+                    }),
+                ),
+            }),
+            "/type-error": routes({
+                // @ts-expect-error
+                "/:n?": param(z.string(), () => routes({})),
+            }),
+        });
+        const href = getHrefs<typeof rs>();
+
+        expect(href("GET /:n", { n: "a:?" }).url).toBe("/a%3A%3F");
+        expect(href("GET /:n", { n: undefined }).url).toBe("/");
+        expect(href("GET /:n", {}).url).toBe("/");
+        expect(href("GET /:n/:m", { n: "a" }).url).toBe("/a");
+        expect(href("GET /:n/:m", { n: "a", m: undefined }).url).toBe("/a");
+        expect(href("GET /:n/:m", { n: "a", m: "b" }).url).toBe("/a/b");
+
+        // @ts-expect-error
+        href("GET /:n/:m", {});
+        // @ts-expect-error
+        href("GET /:n/:m", { n: undefined, m: undefined });
+        // @ts-expect-error
+        href("GET /:n/:m", { m: "b" });
+
+        // @ts-expect-error
+
+        href("GET /:n").url;
+
+        expect(await render(rs, href("GET /:n", { n: "a?b?" }))).toBe("n: a?b?");
+        expect(await render(rs, href("GET /:n", {}))).toBe("n: undefined");
+
+        expect(await render(rs, href("GET /default/:n", { n: "a?b?" }))).toBe("n: a?b?");
+        expect(await render(rs, href("GET /default/:n", {}))).toBe("n: x");
+
+        await expect(() => render(rs, href("GET /:n", { n: "abcdef" }))).rejects.toThrow(
+            "BadRequest",
+        );
+
+        expect(await render(rs, href("GET /:n/:m", { n: "a" }))).toBe("n: a");
+        expect(await render(rs, href("GET /:n/:m", { n: "a", m: undefined }))).toBe("n: a");
+        expect(await render(rs, href("GET /:n/:m", { n: "a", m: "b" }))).toBe("n: a m: b");
+
+        expect(() =>
+            // @ts-expect-error
+            routes({ "GET /:s?": () => <></> }),
+        ).toThrow("Invalid space, slash, question mark, or colon");
+
+        expect(() =>
+            // @ts-expect-error
+            routes({ "GET /?": () => <></> }),
+        ).toThrow("Invalid space, slash, question mark, or colon");
+
+        expect(() =>
+            // @ts-expect-error
+            routes({ "/?": routes({}) }),
+        ).toThrow("Invalid space, slash, question mark, or colon");
+
+        expect(() =>
+            // @ts-expect-error
+            routes({ "/:q??": param(z.string(), () => routes({})) }),
+        ).toThrow("Invalid space, slash, question mark, or colon");
     });
 
     it("supports transforming schemas for path and route params", async () => {
@@ -496,7 +592,7 @@ describe("routing", () => {
                     }),
             ),
         });
-        const href = getHrefs(rs);
+        const href = getHrefs<typeof rs>();
 
         expect(await render(rs, href("GET /:n", { n: "ab" }, { s: "test?" }))).toBe("GET 5 2");
     });
@@ -517,7 +613,7 @@ describe("routing", () => {
                 }),
             ),
         });
-        const href = getHrefs(rs);
+        const href = getHrefs<typeof rs>();
 
         const now = LocalDate.now();
         expect(await render(rs, href("GET /:n", { n: now }, { d: now }))).toBe(`${now} ${now}`);
@@ -534,7 +630,7 @@ describe("routing", () => {
                 },
             ),
         });
-        const href = getHrefs(rs);
+        const href = getHrefs<typeof rs>();
 
         expect(await render(rs, href("GET /", { s: "test?" }))).toBe("test?");
         await expect(() => render(rs, href("GET /", { s: "" }))).rejects.toThrow("BadRequest");
@@ -557,7 +653,7 @@ describe("routing", () => {
                 );
             }),
         });
-        const href = getHrefs(rs);
+        const href = getHrefs<typeof rs>();
 
         expect(await render(rs, href("GET /", { d: { a: "test?", b: 1 } }))).toBe("test? 1");
     });
@@ -570,7 +666,7 @@ describe("routing", () => {
                 return <>{d}</>;
             }),
         });
-        const href = getHrefs(rs);
+        const href = getHrefs<typeof rs>();
 
         expect(await render(rs, href("GET /", { d: "test" }))).toBe("test");
         expect(await render(rs, href("GET /", {}))).toBe("");
@@ -587,7 +683,7 @@ describe("routing", () => {
                 return <>{d}</>;
             }),
         });
-        const href = getHrefs(rs);
+        const href = getHrefs<typeof rs>();
 
         expect(await render(rs, href("GET /", { d: "test" }))).toBe("test");
         expect(await render(rs, href("GET /", {}))).toBe("abc");
@@ -629,7 +725,7 @@ describe("routing", () => {
             );
         });
         const rs = routes({ "POST /": () => form.updateState((s) => s) });
-        const href = getHrefs(rs);
+        const href = getHrefs<typeof rs>();
 
         expect(href("POST /").body).toBeUndefined();
         expect(href("POST /").url).toBe("/");
@@ -649,26 +745,12 @@ describe("routing", () => {
         x = a;
     });
 
-    it("supports JSX wrapping an entire set of route", async () => {
-        const rs = routes(
-            {
-                "/a": routes({ "GET /b": () => <>ab</> }, ({ children }) => (
-                    <span>{children}</span>
-                )),
-            },
-            ({ children }) => <p>{children}</p>,
-        );
-        const href = getHrefs(rs);
-
-        expect(await render(rs, href("GET /a/b"))).toBe("<p><span>ab</span></p>");
-    });
-
     it("supports routes that redirect", async () => {
         const rs = routes({
             "GET /redirect": () => <Redirect href={href("GET /target")} />,
             "GET /target": () => <></>,
         });
-        const href = getHrefs(rs);
+        const href = getHrefs<typeof rs>();
 
         expect(await getRedirectUrl(rs, href("GET /redirect"))).toBe("/target");
     });
@@ -679,106 +761,17 @@ describe("routing", () => {
                 "GET /b": () => <>ab</>,
             }),
         });
-        const href = getHrefs(rs);
+        const href = getHrefs<typeof rs>();
 
         expect(await render(rs, href("GET /a/b"))).toBe("ab");
         await expect(() => render(rs, href("GET /a/b/c" as any))).rejects.toThrow("NotFound");
-    });
-
-    it("supports meta objects", async () => {
-        const RenderMeta = () => {
-            const { a, b, c, d, e, f } = useMeta();
-            return (
-                <>
-                    {a ?? "-"} {b ?? "-"} {c ?? "-"} {d ?? "-"} {e ?? "-"} {f ?? "-"}
-                </>
-            );
-        };
-
-        const form = createForm("form", z.object({ s: z.string() }), RenderMeta);
-
-        const rs = routes({
-            "GET /outer": RenderMeta,
-            "/nested": meta(
-                routes({
-                    "GET /outer": RenderMeta,
-                    "GET /inner1": meta(RenderMeta, { c: "c1", e: "e1" }),
-                    "GET /inner2": meta(route(z.object({ s: z.string() }), RenderMeta), {
-                        c: "c2",
-                        e: "e2",
-                    }),
-                    "/:p": meta(
-                        param(z.string(), () =>
-                            routes({
-                                "GET /outer": RenderMeta,
-                                "GET /inner1": meta(RenderMeta, { a: "a1", d: "d1", e: "e1" }),
-                                "GET /inner2": meta(
-                                    route(z.object({ s: z.string() }), RenderMeta),
-                                    { b: "b2", c: "c2", d: "d2", e: "e2" },
-                                ),
-                                "POST /form": meta(() => form.updateState((s) => s), {
-                                    b: "bf",
-                                    c: "cf",
-                                }),
-                            }),
-                        ),
-                        { a: "aaa", b: "bbb", c: "ccc" },
-                    ),
-                }),
-                { a: "aa", b: "bb", e: "ee" },
-            ),
-        });
-        const href = getHrefs(rs);
-
-        expect(await render(rs, href("GET /outer"))).toBe("a - - - - f");
-        expect(await render(rs, href("GET /nested/outer"))).toBe("aa bb - - ee f");
-        expect(await render(rs, href("GET /nested/inner1"))).toBe("aa bb c1 - e1 f");
-        expect(await render(rs, href("GET /nested/inner2", { s: "" }))).toBe("aa bb c2 - e2 f");
-        expect(await render(rs, href("GET /nested/:p/outer", { p: "p" }))).toBe(
-            "aaa bbb ccc - ee f",
-        );
-        expect(await render(rs, href("GET /nested/:p/inner1", { p: "p" }))).toBe(
-            "a1 bbb ccc d1 e1 f",
-        );
-        expect(await render(rs, href("GET /nested/:p/inner2", { p: "p" }, { s: "" }))).toBe(
-            "aaa b2 c2 d2 e2 f",
-        );
-        expect(
-            await render(rs, { ...href("POST /nested/:p/form", { p: "p" }), body: "$form.s=a" }),
-        ).toBe('<hy-frame id="form@frame">aaa bf cf - ee f</hy-frame>');
-    });
-
-    it("supports async meta functions", async () => {
-        type Meta = { a?: string; b?: string; c?: string };
-        const { routes, meta, useMeta } = createRouter<Meta>(() =>
-            Promise.resolve({ a: "a", b: "b", c: "c" }),
-        );
-
-        const RenderMeta = () => {
-            const { a, b, c } = useMeta();
-            return (
-                <>
-                    {a} {b} {c}
-                </>
-            );
-        };
-
-        const rs = meta(
-            routes({
-                "GET /meta": meta(RenderMeta, () => Promise.resolve({ b: "bb" })),
-            }),
-            () => Promise.resolve({ a: "aa" }),
-        );
-        const href = getHrefs(rs);
-
-        expect(await render(rs, href("GET /meta"))).toBe("aa bb c");
     });
 
     it("disallows non-GET requests from the browser", async () => {
         const rs = routes({
             "POST /p": () => <>test</>,
         });
-        const href = getHrefs(rs);
+        const href = getHrefs<typeof rs>();
 
         expect(await render(rs, href("POST /p"))).toBe("test");
         await expect(() => render(rs, href("POST /p"), () => undefined)).rejects.toThrow(
@@ -786,17 +779,6 @@ describe("routing", () => {
         );
     });
 });
-
-type Meta = {
-    readonly a?: string;
-    readonly b?: string;
-    readonly c?: string;
-    readonly d?: string;
-    readonly e?: string;
-    readonly f?: string;
-};
-
-const { lazy, param, route, routes, meta, useMeta } = createRouter<Meta>({ a: "a", f: "f" });
 
 async function render(
     routes: RoutesComponent<any>,

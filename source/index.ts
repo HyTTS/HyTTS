@@ -110,8 +110,11 @@ export {
     type RouterProps,
     type RoutesComponent,
     type RoutingComponent,
-    createRouter,
+    lazy,
+    param,
+    route,
     Router,
+    routes,
 } from "@/routing/router";
 
 export { type Href, type HrefCreator, type FormValues, getHrefs, isHref } from "@/routing/href";
