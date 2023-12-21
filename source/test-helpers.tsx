@@ -66,7 +66,7 @@ export function runTestApp<T extends RoutesComponent<any>>(
     const app = createExpressApp(routes);
 
     return testApp(app, (fetch) =>
-        useApp(getHrefs(routes), (href, headers) =>
+        useApp(getHrefs<typeof routes>(), (href, headers) =>
             fetch(
                 href.url,
                 href.method === "GET"
@@ -101,6 +101,6 @@ export function runE2eTestApp<T extends RoutesComponent<any>>(
     const app = createExpressApp(routes);
 
     return testApp(app, (_fetch, baseUrl) =>
-        useApp((href) => page.goto(`${baseUrl}${href.url}`), getHrefs(routes)),
+        useApp((href) => page.goto(`${baseUrl}${href.url}`), getHrefs<typeof routes>()),
     );
 }

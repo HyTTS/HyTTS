@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { Redirect, useHttpStatusCode, useResponseHeader } from "@/http/http-context";
 import type { Href } from "@/routing/href";
-import { createRouter } from "@/routing/router";
+import { param, route, routes } from "@/routing/router";
 import { runTestApp } from "@/test-helpers";
 
 describe("express-middleware", () => {
@@ -80,5 +80,3 @@ describe("express-middleware", () => {
             },
         ));
 });
-
-const { routes, route, param } = createRouter({});

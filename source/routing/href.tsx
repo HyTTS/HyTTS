@@ -55,10 +55,7 @@ export type HrefCreator<Routes extends RoutesComponent<any>> = ReturnType<
 export function getHrefs<
     Routes extends RoutesComponent<any>,
     Hrefs extends Record<string, any> = GetHrefs<Routes>,
->(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    routes: Routes,
-): <Ref extends keyof Hrefs & string>(
+>(): <Ref extends keyof Hrefs & string>(
     href: Ref,
     ...params: Hrefs[Ref]["params"]
 ) => Href<Hrefs[Ref]["method"], Hrefs[Ref]["formState"]> {
@@ -83,15 +80,15 @@ export function getHrefs<
 
         function replacePathParams(url: string, pathParams: Record<string, unknown> | undefined) {
             Object.entries(pathParams ?? {}).forEach(([key, value]) => {
-                const parameter = encodeURIComponent(`${value}`);
-                if (parameter === "") {
-                    throw new Error(`Value required for path parameter '${key}'.`);
-                }
-
-                url = url.replaceAll(`:${key}`, parameter);
+                const parameter = value ? `/${encodeURIComponent(`${value}`)}` : "";
+                url = url.replaceAll(`/:${key}`, parameter);
             });
 
-            return url;
+            // There might be leftover optional path parameters that we have to remove
+            url = url.replaceAll(/\/:[^/]*/g, "");
+
+            // If the URL is now empty, return "/" so that the URL always starts with a leading slash
+            return url ? url : "/";
         }
     };
 }
@@ -119,17 +116,27 @@ type CollectRoutesFromRouterDefinition<
         : Routes[Key] extends FormComponent<infer Form>
           ? [Method, `${Method} ${CombinePaths<Path, SubPath>}`, PathParams, {}, FormValues<Form>]
           : [Method, `${Method} ${CombinePaths<Path, SubPath>}`, PathParams, {}, FormValues<{}>]
-    : Key extends `/:${infer ParamPath}`
+    : Key extends `/:${infer ParamPath}?`
       ? Routes[Key] extends ParamComponent<infer Param, infer Sub>
           ? CollectRoutesFromRouter<
                 Sub,
                 CombinePaths<Path, `:${ParamPath}`>,
-                PathParams & { [K in ParamPath]: Param }
+                Required<PathParams> & { [K in ParamPath]?: Param }
             >
           : never
-      : Key extends `/${infer SubPath}`
-        ? CollectRoutesFromRouter<Routes[Key], CombinePaths<Path, SubPath>, PathParams>
-        : never;
+      : Key extends `/:${infer ParamPath}`
+        ? Routes[Key] extends ParamComponent<infer Param, infer Sub>
+            ? CollectRoutesFromRouter<
+                  Sub,
+                  CombinePaths<Path, `:${ParamPath}`>,
+                  PathParams & {
+                      [K in ParamPath]: Param;
+                  }
+              >
+            : never
+        : Key extends `/${infer SubPath}`
+          ? CollectRoutesFromRouter<Routes[Key], CombinePaths<Path, SubPath>, PathParams>
+          : never;
 
 type CombinePaths<Path extends string, SubPath extends string> = Path extends `${"" | "/"}`
     ? SubPath extends ""
