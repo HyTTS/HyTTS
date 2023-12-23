@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Redirect, useHttpStatusCode, useResponseHeader } from "@/http/http-context";
+import { HttpHeader, HttpStatusCode, Redirect } from "@/http/http-context";
 import type { Href } from "@/routing/href";
 import { param, route, routes } from "@/routing/router";
 import { runTestApp } from "@/test-helpers";
@@ -39,14 +39,12 @@ describe("express-middleware", () => {
     it("allows modifying the HTTP response", () =>
         runTestApp(
             routes({
-                "GET /statusCode": () => {
-                    useHttpStatusCode(201);
-                    return <>status: 201</>;
-                },
-                "GET /headers": () => {
-                    useResponseHeader("x-test", "test");
-                    return <>header</>;
-                },
+                "GET /statusCode": () => <HttpStatusCode code={201}>status: 201</HttpStatusCode>,
+                "GET /headers": () => (
+                    <HttpHeader name="x-test" value="test">
+                        header
+                    </HttpHeader>
+                ),
                 "GET /redirect": () => (
                     <Redirect href={{ url: "/statusCode", method: "GET" } as Href<"GET">} />
                 ),
