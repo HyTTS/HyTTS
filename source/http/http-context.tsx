@@ -3,7 +3,7 @@ import type { ZodType, ZodTypeDef } from "zod";
 import { HttpError } from "@/http/http-error";
 import { type ContextProviderProps, createContext, useContext } from "@/jsx/context";
 import { CspNonceProvider } from "@/jsx/csp-nonce";
-import type { JsxElement } from "@/jsx/jsx-types";
+import type { JsxElement, PropsWithChildren } from "@/jsx/jsx-types";
 import type { Href } from "@/routing/href";
 import { parseUrlSearchParams } from "@/serialization/url-params";
 
@@ -58,106 +58,79 @@ export function HttpResponse(
     );
 }
 
+export type HttpHeaderProps = PropsWithChildren<{
+    readonly name: string;
+    readonly value: string;
+}>;
+
 /**
- * Sends an HTTP header of the given `name` and with the given `value` as part of the response. This
- * function can be called multiple times to add additional HTTP response headers. If the function is
- * called again for the same header name, the last call wins. So components deeper in the tree can
- * overwrite headers set by their ancestors. It is a race condition if sibling components within the
- * tree set different status codes, so the behavior in that case is undefined.
+ * Sends an HTTP header of the given `name` and with the given `value` as part of the response. If
+ * the same HTTP header is set by multiple component instances, the last one wins. So components
+ * deeper in the tree can overwrite headers set by their ancestors. It is a race condition if
+ * sibling components within the tree set different values for the same header, so the behavior in
+ * that case is undefined.
  */
-export function useResponseHeader(name: string, value: string) {
+export function HttpHeader({ name, value, children }: HttpHeaderProps): JsxElement {
     useHttpContext().setHeader(name, value);
+    return <>{children}</>;
 }
 
-/** Retrieves the value of the current request's HTTP header called `name`. */
-export function useRequestHeader(name: string) {
-    return useHttpContext().getHeader(name);
-}
+export type HttpStatusCodeProps = PropsWithChildren<{
+    readonly code: number;
+}>;
 
 /**
- * Sets the HTTP status code the given value. The last call to this function wins. So components
- * deeper in the tree can overwrite the status code set by their ancestors. It is a race condition
- * if sibling components within the tree set different status codes, so the behavior in that case is
- * undefined.
+ * Sets the HTTP status code the given value. If the request renders multiple component instances,
+ * the last one wins. So components deeper in the tree can overwrite the status code set by their
+ * ancestors. It is a race condition if sibling components within the tree set different status
+ * codes, so the behavior in that case is undefined.
  */
-export function useHttpStatusCode(code: number) {
+export function HttpStatusCode({ code, children }: HttpStatusCodeProps): JsxElement {
     useHttpContext().setStatusCode(code);
+    return <>{children}</>;
 }
 
-/** Returns the current request's search params, parsed with the given `schema`. */
-export function useUrlSearchParams<
-    Output extends Record<string, unknown>,
-    Def extends ZodTypeDef,
-    Input,
->(schema: ZodType<Output, Def, Input>): Output {
-    return parseUrlSearchParams(schema, useHttpContext().searchParams)!;
-}
+export type RedirectProps = PropsWithChildren<{
+    readonly href: Href<"GET">;
+}>;
 
 /**
- * Sets the route URL the browser should be redirected to using a 302 HTTP status code. Immediately
- * sends the response so ensure that nothing else gets rendered. You cannot redirect more than once
- * in the same HTTP response.
+ * Sets the URL the browser should be redirected to using a 302 HTTP status code. All rendered JSX
+ * components are discarded. You cannot redirect more than once in the same HTTP response.
  */
-export function useRedirect(redirectTo: Href<"GET">) {
+export function Redirect({ href, children }: RedirectProps): JsxElement {
     // SECURITY: Do not allow redirects outside of our app, when someone fakes the `RouteUrl`, see:
     // https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
-    if (!isRelativeUrl(redirectTo.url)) {
+    if (!isRelativeUrl(href.url)) {
         throw new Error("Redirecting to absolute URLs is unsupported for security reasons.");
     }
 
-    useHttpContext().redirect(redirectTo.url);
+    useHttpContext().redirect(href.url);
+    return <>{children}</>;
+
+    function isRelativeUrl(url: string) {
+        const origin = "https://example.com";
+        return new URL(url, origin).origin === origin;
+    }
 }
 
-/**
- * Sets an absolute URL, typically to some other webpage or app, the browser should be redirected to
- * using a 302 HTTP status code. Immediately sends the response so ensure that nothing else gets
- * rendered. You cannot redirect more than once in the same HTTP response.
- *
- * SECURITY: Redirecting to absolute URLs can be dangerous from a security perspective. Ensure that
- * you redirect to an expected URL and that you understand the OWASP security cheat sheet for
- * redirects:
- * https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
- */
-export function useAbsoluteRedirect(url: string) {
-    useHttpContext().redirect(url);
-}
-
-export type RedirectProps = {
-    readonly href: Href<"GET">;
-};
-
-/**
- * Sets the URL the browser should be redirected to using a 302 HTTP status code, internally using
- * `useRedirect`. See the remarks there regarding the precise behavior.
- */
-export function Redirect(props: RedirectProps): JsxElement {
-    useRedirect(props.href);
-    return null;
-}
-
-export type AbsoluteRedirectProps = {
+export type AbsoluteRedirectProps = PropsWithChildren<{
     readonly href: string;
-};
+}>;
 
 /**
  * Sets an absolute URL, typically to some other webpage or app, the browser should be redirected to
- * using a 302 HTTP status code, internally using `useAbsoluteRedirect`. See the remarks there
- * regarding the precise behavior.
+ * using a 302 HTTP status code. All rendered JSX components are discarded. You cannot redirect more
+ * than once in the same HTTP response.
  *
  * SECURITY: Redirecting to absolute URLs can be dangerous from a security perspective. Ensure that
  * you redirect to an expected URL and that you understand the OWASP security cheat sheet for
  * redirects:
  * https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
  */
-export function AbsoluteRedirect(props: AbsoluteRedirectProps): JsxElement {
-    useAbsoluteRedirect(props.href);
-    return null;
-}
-
-/** Checks whether the given URL is relative or absolute. */
-function isRelativeUrl(url: string) {
-    const origin = "https://example.com";
-    return new URL(url, origin).origin === origin;
+export function AbsoluteRedirect({ href, children }: AbsoluteRedirectProps): JsxElement {
+    useHttpContext().redirect(href);
+    return <>{children}</>;
 }
 
 /**
@@ -175,4 +148,18 @@ export function useRequester() {
  */
 export function useRequestedFrameId() {
     return useContext(httpContext).getHeader("x-hy-frame-id");
+}
+
+/** Returns the current request's search params, parsed with the given `schema`. */
+export function useUrlSearchParams<
+    Output extends Record<string, unknown>,
+    Def extends ZodTypeDef,
+    Input,
+>(schema: ZodType<Output, Def, Input>): Output {
+    return parseUrlSearchParams(schema, useHttpContext().searchParams)!;
+}
+
+/** Retrieves the value of the current request's HTTP header called `name`. */
+export function useRequestHeader(name: string) {
+    return useHttpContext().getHeader(name);
 }

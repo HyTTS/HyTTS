@@ -1,12 +1,12 @@
 import { z } from "zod";
 import {
     AbsoluteRedirect,
+    HttpHeader,
+    HttpStatusCode,
     Redirect,
-    useHttpStatusCode,
     useRequestedFrameId,
     useRequester,
     useRequestHeader,
-    useResponseHeader,
     useUrlSearchParams,
 } from "@/http/http-context";
 import { getHrefs, type Href } from "@/routing/href";
@@ -56,20 +56,21 @@ describe("http-context", () => {
     it("supports getting and setting HTTP headers", () =>
         runTestApp(
             routes({
-                "GET /single": () => {
-                    useResponseHeader("x-test", "1");
-                    return <>{useRequestHeader("test")}</>;
-                },
-                "GET /multiple": () => {
-                    useResponseHeader("x-test1", "1");
-                    useResponseHeader("x-test2", "2");
-                    return <></>;
-                },
-                "GET /overwrite": () => {
-                    useResponseHeader("x-test", "1");
-                    useResponseHeader("x-test", "2");
-                    return <></>;
-                },
+                "GET /single": () => (
+                    <HttpHeader name="x-test" value="1">
+                        {useRequestHeader("test")}
+                    </HttpHeader>
+                ),
+                "GET /multiple": () => (
+                    <HttpHeader name="x-test1" value="1">
+                        <HttpHeader name="x-test2" value="2" />
+                    </HttpHeader>
+                ),
+                "GET /overwrite": () => (
+                    <HttpHeader name="x-test" value="1">
+                        <HttpHeader name="x-test" value="2" />
+                    </HttpHeader>
+                ),
             }),
             async (href, fetch) => {
                 const singleResponse = await fetch(href("GET /single"), { test: "abc" });
@@ -88,15 +89,12 @@ describe("http-context", () => {
     it("supports setting the HTTP status code", () =>
         runTestApp(
             routes({
-                "GET /single": () => {
-                    useHttpStatusCode(400);
-                    return <></>;
-                },
-                "GET /overwrite": () => {
-                    useHttpStatusCode(400);
-                    useHttpStatusCode(401);
-                    return <></>;
-                },
+                "GET /single": () => <HttpStatusCode code={400} />,
+                "GET /overwrite": () => (
+                    <HttpStatusCode code={400}>
+                        <HttpStatusCode code={401} />
+                    </HttpStatusCode>
+                ),
             }),
             async (href, fetch) => {
                 const singleResponse = await fetch(href("GET /single"));

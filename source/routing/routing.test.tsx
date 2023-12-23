@@ -1,6 +1,6 @@
 import { LocalDate } from "@js-joda/core";
 import { z } from "zod";
-import { createForm, useFormProperty } from "@/form/form";
+import { createForm } from "@/form/form";
 import { HttpResponse, Redirect } from "@/http/http-context";
 import { renderToString } from "@/jsx/jsx-runtime";
 import { type FormValues, getHrefs, type Href } from "@/routing/href";
@@ -714,17 +714,16 @@ describe("routing", () => {
     });
 
     it("supports forms", async () => {
-        const form = createForm("form", z.object({ s: z.string(), n: z.number() }), () => {
-            const { value: s } = useFormProperty((s) => s.s);
-            const { value: n } = useFormProperty((s) => s.n);
-
-            return (
+        const form = createForm(
+            "form",
+            z.object({ s: z.string(), n: z.number() }),
+            ({ form: ctx }) => (
                 <>
-                    {s} {n}
+                    {ctx((s) => s.s).value} {ctx((s) => s.n).value}
                 </>
-            );
-        });
-        const rs = routes({ "POST /": () => form.updateState((s) => s) });
+            ),
+        );
+        const rs = routes({ "POST /": () => form.update((s) => s) });
         const href = getHrefs<typeof rs>();
 
         expect(href("POST /").body).toBeUndefined();

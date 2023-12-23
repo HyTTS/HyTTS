@@ -2,9 +2,8 @@ import get from "lodash/get";
 import { z, type ZodType, type ZodTypeDef } from "zod";
 import { createFrame, type FrameMetadata } from "@/dom/frame";
 import { collectPath, type PropertySelector } from "@/form/property-path";
-import { useHttpContext, useHttpStatusCode, useRequestHeader } from "@/http/http-context";
-import { createContext, useContext } from "@/jsx/context";
-import type { JSX, JsxComponent } from "@/jsx/jsx-types";
+import { HttpStatusCode, useHttpContext, useRequestHeader } from "@/http/http-context";
+import type { JSX, JsxComponent, JsxElement } from "@/jsx/jsx-types";
 import type { FormValues, Href } from "@/routing/href";
 import type { FormElement } from "@/routing/router";
 import { toPartialSchema, type ToPartialSchema } from "@/serialization/to-partial-schema";
@@ -34,160 +33,6 @@ export type FormProps<FormState extends Record<string, unknown>> = Omit<
     readonly target?: FrameMetadata;
 };
 
-export function Form<FormStateSchema extends SomeFormSchema>({
-    target,
-    onSubmit,
-    onValidate,
-    ...props
-}: FormProps<z.input<FormStateSchema>>) {
-    const { formId } = useContext(formContext);
-
-    return (
-        <form
-            {...props}
-            id={formId}
-            name={formId}
-            method="post"
-            action={onSubmit.url}
-            data-hy-validate={onValidate?.url ?? onSubmit.url}
-            data-hy-frame={target?.frameId}
-            novalidate
-        />
-    );
-}
-
-export type FormContentProps<FormState extends Record<string, unknown>> = {
-    readonly formState: FormState;
-};
-
-export function createForm<FormStateSchema extends SomeFormSchema>(
-    formId: string,
-    formStateSchema: FormStateSchema | (() => FormStateSchema | Promise<FormStateSchema>),
-    FormContent: JsxComponent,
-) {
-    type InputFormState = z.input<FormStateSchema>;
-    type PartialFormState = z.output<ToPartialSchema<FormStateSchema>>;
-
-    if (formId.includes("@")) {
-        throw new Error("You cannot use '@' as part of an id.");
-    }
-
-    const formFrameId = `${formId}@frame`;
-    const Frame = createFrame(formFrameId);
-    const getSchema = async () =>
-        typeof formStateSchema === "function" ? await formStateSchema() : formStateSchema;
-
-    const FormContext = async ({ formState }: FormContentProps<PartialFormState>) => {
-        // At this point, we can be sure that the given form state structurally matches the Zod schema.
-        // So we can use the Zod schema to validate the user's input, subsequently showing all validation
-        // errors when rerendering the form.
-        const parseResult = (await getSchema()).safeParse(formState);
-        const [state, errors] = parseResult.success
-            ? [parseResult.data, {}]
-            : [
-                  formState,
-                  Object.fromEntries(
-                      parseResult.error.issues.map((issue) => [
-                          issue.path.join("."),
-                          issue.message,
-                      ]),
-                  ),
-              ];
-
-        return (
-            <formContext.Provider
-                value={{ formState: state, errors, formId, frameId: formFrameId }}
-            >
-                <Frame>
-                    <FormContent />
-                </Frame>
-            </formContext.Provider>
-        );
-    };
-
-    async function WithPartialFormState(props: {
-        Content: JsxComponent<FormContentProps<PartialFormState>>;
-    }) {
-        const schema = await getSchema();
-        const { method, searchParams, requestBody } = useHttpContext();
-        const paramsSource = method === "GET" ? searchParams : requestBody;
-
-        const { $form } = parseUrlSearchParams(
-            z.object({ $form: toPartialSchema(schema) }),
-            paramsSource,
-        )!;
-
-        return <props.Content formState={$form!} />;
-    }
-
-    FormContext.updateState = (
-        updateState: (state: PartialFormState) => PartialFormState | Promise<PartialFormState>,
-    ): FormElement<InputFormState> => {
-        return (
-            <WithPartialFormState
-                Content={async ({ formState }) => {
-                    const updatedState = await updateState(formState);
-                    if (!(await getSchema()).safeParse(updatedState).success) {
-                        useHttpStatusCode(422);
-                    }
-
-                    return <FormContext formState={updatedState} />;
-                }}
-            />
-        ) as any;
-    };
-
-    FormContext.submit = (
-        /**
-         * The action that is carried out if the form passed validation, like storing the data in
-         * some database, sending an e-mail, etc.
-         */
-        action: JsxComponent<{ formState: z.output<FormStateSchema> }>,
-    ): FormElement<InputFormState> => {
-        return (
-            <WithPartialFormState Content={({ formState }) => <Submit formState={formState} />} />
-        ) as any;
-
-        async function Submit(props: FormContentProps<InputFormState>) {
-            const result = (await getSchema()).safeParse(props.formState);
-
-            if (result.success) {
-                // The submit route is often used for validation-only purposes as well, because in
-                // some (or probably most?) cases, a form validation is just a form submission without
-                // the side effect after successful validation. This is purely a DX optimization, saving
-                // the developer from registering two routes (validation and submission) per form when
-                // one suffices in most cases.
-                // The browser tells us whether this is a validation-only request via an HTTP header. So
-                // if this header is sent, we don't execute the submit action the form.
-                const validationOnly = !!useRequestHeader("x-hy-validate-form");
-                return validationOnly ? (
-                    <FormContext formState={props.formState} />
-                ) : (
-                    action({ formState: result.data })
-                );
-            } else {
-                useHttpStatusCode(422);
-                return <FormContext formState={props.formState} />;
-            }
-        }
-    };
-
-    return FormContext;
-}
-
-export function useFormProperty<FormState extends Record<string, unknown>, T>(
-    property: PropertySelector<FormState, T>,
-) {
-    const { formState, errors } = useContext(formContext);
-    const path = collectPath(property);
-
-    return {
-        value: get(formState, path) as T,
-        error: get(errors, path) as string,
-        name: path,
-    } as const;
-}
-
 export type FormButtonProps<FormState extends Record<string, unknown>> = Omit<
     JSX.HTMLAttributes<HTMLButtonElement>,
     "type"
@@ -206,31 +51,196 @@ export type FormButtonProps<FormState extends Record<string, unknown>> = Omit<
     readonly keepFieldsEnabled?: boolean;
 };
 
-export function FormButton<FormState extends Record<string, unknown>>({
-    href,
-    markFieldsAsTouched,
-    keepFieldsEnabled,
-    ...props
-}: FormButtonProps<FormState>) {
-    const { formId, frameId } = useContext(formContext);
+export type FormContext<FormStateSchema extends SomeFormSchema> = ReturnType<
+    typeof createFormContext<FormStateSchema>
+>;
 
-    return (
-        <button
-            {...props}
-            type="button"
-            data-hy-method={href.method}
-            data-hy-frame={frameId}
-            data-hy-url={href.url}
-            data-hy-body={href.body}
-            data-hy-form={formId}
-            data-hy-mark-as-touched={markFieldsAsTouched}
-        />
-    );
+export type Form<FormStateSchema extends SomeFormSchema> = ReturnType<
+    typeof createForm<FormStateSchema>
+>;
+
+export type FormProperty<TValue> = {
+    readonly name: string;
+    readonly value: TValue;
+    readonly hasError: boolean;
+    readonly error: string | undefined;
+};
+
+function createFormContext<FormStateSchema extends SomeFormSchema>(
+    schema: FormStateSchema,
+    frameId: string,
+    formId: string,
+    formState: unknown,
+) {
+    type InputFormState = z.input<FormStateSchema>;
+    type PartialFormState = z.output<ToPartialSchema<FormStateSchema>>;
+
+    // At this point, we can be sure that the given form state structurally matches the Zod schema.
+    // So we can use the Zod schema to validate the user's input, subsequently showing all validation
+    // errors when rerendering the form.
+    const parseResult = schema.safeParse(formState);
+    const [state, errors] = parseResult.success
+        ? [parseResult.data, {}]
+        : [
+              formState,
+              Object.fromEntries(
+                  parseResult.error.issues.map((issue) => [issue.path.join("."), issue.message]),
+              ),
+          ];
+
+    const context = <TValue,>(
+        propertyPath: PropertySelector<PartialFormState, TValue>,
+    ): FormProperty<TValue> => {
+        const path = collectPath(propertyPath);
+        const value = get(state, path) as TValue;
+        const error = get(errors, path) as string | undefined;
+        return { value, error, name: path, hasError: !!error };
+    };
+
+    context.formId = formId;
+    context.frameId = frameId;
+
+    context.Form = ({
+        target,
+        onSubmit,
+        onValidate,
+        ...props
+    }: FormProps<InputFormState>): JsxElement => {
+        return (
+            <form
+                {...props}
+                id={formId}
+                name={formId}
+                method="post"
+                action={onSubmit.url}
+                data-hy-validate={onValidate?.url ?? onSubmit.url}
+                data-hy-frame={target?.frameId}
+                novalidate
+            />
+        );
+    };
+
+    context.Button = ({
+        href,
+        markFieldsAsTouched,
+        keepFieldsEnabled,
+        ...props
+    }: FormButtonProps<InputFormState>): JsxElement => {
+        return (
+            <button
+                {...props}
+                type="button"
+                data-hy-method={href.method}
+                data-hy-frame={frameId}
+                data-hy-url={href.url}
+                data-hy-body={href.body}
+                data-hy-form={formId}
+                data-hy-mark-as-touched={markFieldsAsTouched}
+            />
+        );
+    };
+
+    return context;
 }
 
-const formContext = createContext<{
-    readonly formState: Record<string, unknown>;
-    readonly errors: Record<string, unknown>;
-    readonly formId: string;
-    readonly frameId: string;
-}>({ name: "form context" });
+export function createForm<FormStateSchema extends SomeFormSchema>(
+    formId: string,
+    formStateSchema: FormStateSchema | (() => FormStateSchema | Promise<FormStateSchema>),
+    FormContent: JsxComponent<{ form: FormContext<FormStateSchema> }>,
+) {
+    type InputFormState = z.input<FormStateSchema>;
+    type PartialFormState = z.output<ToPartialSchema<FormStateSchema>>;
+
+    if (formId.includes("@")) {
+        throw new Error("You cannot use '@' as part of a form id.");
+    }
+
+    const frameId = `${formId}@frame`;
+    const Frame = createFrame(frameId);
+    const getSchema = async () =>
+        typeof formStateSchema === "function" ? await formStateSchema() : formStateSchema;
+
+    const Form = async ({ formState }: { formState: PartialFormState }) => {
+        return (
+            <Frame>
+                <FormContent
+                    form={createFormContext<FormStateSchema>(
+                        await getSchema(),
+                        frameId,
+                        formId,
+                        formState,
+                    )}
+                />
+            </Frame>
+        );
+    };
+
+    async function getPartialFormState(): Promise<PartialFormState> {
+        const schema = await getSchema();
+        const { method, searchParams, requestBody } = useHttpContext();
+        const paramsSource = method === "GET" ? searchParams : requestBody;
+
+        const { $form } = parseUrlSearchParams(
+            z.object({ $form: toPartialSchema(schema) }),
+            paramsSource,
+        )!;
+
+        return $form!;
+    }
+
+    Form.update = (
+        updateState: (state: PartialFormState) => PartialFormState | Promise<PartialFormState>,
+    ): FormElement<InputFormState> => {
+        return (<Update />) as any;
+
+        async function Update() {
+            const updatedState = await updateState(await getPartialFormState());
+            const isValid = (await getSchema()).safeParse(updatedState).success;
+
+            return (
+                <HttpStatusCode code={isValid ? 200 : 422}>
+                    <Form formState={updatedState} />
+                </HttpStatusCode>
+            );
+        }
+    };
+
+    Form.submit = (
+        /**
+         * The action that is carried out if the form passed validation, like storing the data in
+         * some database, sending an e-mail, etc.
+         */
+        action: JsxComponent<{ formState: z.output<FormStateSchema> }>,
+    ): FormElement<InputFormState> => {
+        return (<Submit />) as any;
+
+        async function Submit() {
+            const formState = await getPartialFormState();
+            const result = (await getSchema()).safeParse(formState);
+
+            if (result.success) {
+                // The submit route is often used for validation-only purposes as well, because in
+                // some (or probably most?) cases, a form validation is just a form submission without
+                // the side effect after successful validation. This is purely a DX optimization, saving
+                // the developer from registering two routes (validation and submission) per form when
+                // one suffices in most cases.
+                // The browser tells us whether this is a validation-only request via an HTTP header. So
+                // if this header is sent, we don't execute the submit action the form.
+                const validationOnly = !!useRequestHeader("x-hy-validate-form");
+                return validationOnly ? (
+                    <Form formState={formState} />
+                ) : (
+                    action({ formState: result.data })
+                );
+            } else {
+                return (
+                    <HttpStatusCode code={422}>
+                        <Form formState={formState} />
+                    </HttpStatusCode>
+                );
+            }
+        }
+    };
+
+    return Form;
+}
