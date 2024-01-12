@@ -4,7 +4,7 @@ import { HttpError } from "@/http/http-error";
 import { type ContextProviderProps, createContext, useContext } from "@/jsx/context";
 import { CspNonceProvider } from "@/jsx/csp-nonce";
 import type { JsxElement, PropsWithChildren } from "@/jsx/jsx-types";
-import type { Href } from "@/routing/href";
+import type { Href } from "@/routing/href-3";
 import { parseUrlSearchParams } from "@/serialization/url-params";
 
 /** The list of HTTP verbs supported by HyTTS. */
