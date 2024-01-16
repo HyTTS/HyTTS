@@ -125,7 +125,7 @@ export function route<
             typeof schemaProvider === "function" ? await schemaProvider() : schemaProvider;
 
         const paramsSource = method === "GET" ? searchParams : requestBody;
-        const params = parseUrlSearchParams(schema, paramsSource);
+        const params = parseUrlSearchParams(schema, paramsSource)!;
 
         return <Handler {...params} />;
     });

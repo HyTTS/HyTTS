@@ -52,11 +52,7 @@ export type PropsWithChildren<TProps = unknown> = TProps & {
 };
 
 /** Represents a potentially asynchronous function component. */
-export type JsxComponent<TProps = {}> = TProps extends Record<string, unknown>
-    ? keyof TProps extends never
-        ? () => JsxElement
-        : (props: TProps) => JsxElement
-    : () => JsxElement;
+export type JsxComponent<TProps = {}> = (props: TProps) => JsxElement;
 
 /** Represents the arguments of an HTML event. */
 export type EventArgs<TElement = HTMLElement, TEvent extends Event = Event> = TEvent & {

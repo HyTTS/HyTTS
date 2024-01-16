@@ -102,23 +102,35 @@ export { type AProps, type ButtonProps, A, Button } from "@/dom/links";
 export { type BodyProps, Body, BodyFrame } from "@/dom/body";
 
 export {
-    type FormComponent,
-    type FormElement,
-    type ParamComponent,
-    type Provide,
-    type RouteComponent,
-    type RoutesDefinition,
+    type BodyParamsConfig,
+    type CombinedRoutes,
+    type GetRoutes,
+    type HashParamConfig,
+    type NestedComponentOrRoutes,
+    type NestedRoutingConfig,
+    type PathParamConfig,
+    type RegisterRoutes,
     type RouterProps,
-    type RoutesComponent,
+    type RoutesConfig,
+    type RoutesDefinition,
+    type RoutesFunction,
+    type RoutesInfo,
     type RoutingComponent,
-    lazy,
-    param,
-    route,
+    type RoutingConfig,
+    type SearchParamsConfig,
+    type SomeRouteParams,
     Router,
+    bodyParams,
+    combineRoutes,
+    hashParam,
+    lazy,
+    pathParam,
     routes,
-} from "@/routing/router";
+    searchParams,
+    wrapRoutes,
+} from "@/routing/router-3";
 
-export { type Href, type HrefCreator, type FormValues, getHrefs, isHref } from "@/routing/href";
+export { type Href, createHref, isHref } from "@/routing/href-3";
 
 export {
     type Form,

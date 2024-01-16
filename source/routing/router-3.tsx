@@ -1,4 +1,4 @@
-import type { ZodType } from "zod";
+import { z, type ZodType } from "zod";
 import { type HttpMethod, useHttpContext, useRequester } from "@/http/http-context";
 import { HttpError } from "@/http/http-error";
 import { ErrorBoundary } from "@/jsx/error-boundary";
@@ -6,14 +6,16 @@ import {
     isJsxExpression,
     type JsxComponent,
     type JsxElement,
+    type JsxExpression,
     type PropsWithChildren,
 } from "@/jsx/jsx-types";
 import { unpack } from "@/serialization/data-packing";
 import { parseUrlSearchParams } from "@/serialization/url-params";
 import type { Flatten } from "@/types";
 
+export const routingSymbol = Symbol();
 export const routesSymbol = Symbol();
-export const pathParamsSymbol = Symbol();
+export const pathParamSymbol = Symbol();
 export const searchParamsSymbol = Symbol();
 export const bodyParamsSymbol = Symbol();
 export const hashParamSymbol = Symbol();
@@ -29,21 +31,24 @@ export type RoutesDefinition<T extends Record<string, unknown>> = {
                 : Param extends `${string}?`
                   ? Param extends `${string}?${string}?${string}`
                       ? "ERROR: Path parameters can only contain a question mark at the end."
-                      : T[Key] extends ParamsConfig<typeof pathParamsSymbol, undefined, any>
+                      : T[Key] extends PathParamConfig<undefined, any>
                         ? T[Key]
                         : "ERROR: Schema for optional path parameter must handle `undefined` values."
-                  : ParamsConfig<typeof pathParamsSymbol, any, any>
+                  : PathParamConfig<any, NestedRoutingConfig>
             : Key extends `/${infer Path}`
               ? Path extends `${string}:${string}`
                   ? "ERROR: Colons are not allowed in a path segment."
                   : Path extends `${string}?${string}`
                     ? "ERROR: Question marks are not allowed in a path segment."
-                    :
-                          | RoutesConfig<any>
-                          | (() => Promise<RoutesConfig<any>>)
-                          | ParamsConfig<typeof searchParamsSymbol, any, any>
-                          | ParamsConfig<typeof bodyParamsSymbol, any, any>
-                          | ParamsConfig<typeof hashParamSymbol, any, any>
+                    : T[Key] extends RoutesConfig<any>
+                      ? T[Key]
+                      : T[Key] extends SearchParamsConfig<any, any>
+                        ? T[Key]
+                        : T[Key] extends BodyParamsConfig<any, any>
+                          ? T[Key]
+                          : T[Key] extends HashParamConfig<any, any>
+                            ? T[Key]
+                            : never
               : Key extends `${HttpMethod} /${infer Path}`
                 ? Path extends `${string}:${string}`
                     ? "ERROR: Colons are not allowed in a path segment."
@@ -53,99 +58,169 @@ export type RoutesDefinition<T extends Record<string, unknown>> = {
                 : "ERROR: Properties must start with '{HttpMethod} /' or just '/'.";
 };
 
-type ParamsKind =
-    | typeof pathParamsSymbol
-    | typeof searchParamsSymbol
-    | typeof bodyParamsSymbol
-    | typeof hashParamSymbol;
-
-export type RoutingComponentProps = { readonly pathSegments: string[] };
-export type RoutingComponent<Config extends RoutingConfig> = Config &
-    JsxComponent<RoutingComponentProps>;
-
-export type RoutingConfig = RoutesConfig<any> | ParamsConfig<ParamsKind, any, any>;
+export type RoutingComponent = JsxComponent<{ pathSegments: string[] }>;
 
 export type RoutesConfig<Def extends RoutesDefinition<Def>> = {
-    readonly kind: typeof routesSymbol;
-    readonly typeInfo?: Def; // is that needed?
+    readonly [routingSymbol]: typeof routesSymbol;
+    readonly typeInfo?: Def;
+    readonly Component: RoutingComponent;
 };
 
-export type ParamsConfig<Kind extends ParamsKind, Params, Routes extends RoutingConfig> = {
-    readonly kind: ParamsKind;
-    readonly typeInfo?: [Kind, (params: Params) => void, Routes]; // is that needed?
+export type PathParamConfig<
+    Param,
+    Routes extends NestedComponentOrRoutes<Param, NestedRoutingConfig>,
+> = {
+    readonly [routingSymbol]: typeof pathParamSymbol;
+    readonly typeInfo?: [(params: Param) => void];
+    readonly routes?: Routes;
+    readonly Component: RoutingComponent;
 };
 
-export function pathParam<ParamIn, ParamOut, Routes extends RoutingComponent<RoutingConfig>>(
-    schema: ZodType<ParamOut, any, ParamIn>,
-    getRoutes: Routes extends RoutingComponent<ParamsConfig<typeof pathParamsSymbol, any, any>>
-        ? "ERROR: Unexpected path parameters."
-        : (params: ParamOut) => Routes,
-): RoutingComponent<ParamsConfig<typeof pathParamsSymbol, ParamIn, Routes>> {
-    return createRoutingComponent(
-        pathParamsSymbol,
-        async ({ pathSegments }: RoutingComponentProps) => {
-            const param = unpack(
-                schema,
-                pathSegments[0] ? decodeURIComponent(pathSegments[0]) : undefined,
+export type SearchParamsConfig<
+    Params,
+    Routes extends NestedComponentOrRoutes<Params, NestedRoutingConfig>,
+> = {
+    readonly [routingSymbol]: typeof searchParamsSymbol;
+    readonly routes?: Routes;
+    readonly Component: RoutingComponent;
+};
+
+export type BodyParamsConfig<
+    Params,
+    Routes extends NestedComponentOrRoutes<Params, NestedRoutingConfig>,
+> = {
+    readonly [routingSymbol]: typeof bodyParamsSymbol;
+    readonly routes?: Routes;
+    readonly Component: RoutingComponent;
+};
+
+export type HashParamConfig<
+    Param,
+    Routes extends NestedComponentOrRoutes<Param, NestedRoutingConfig>,
+> = {
+    readonly [routingSymbol]: typeof hashParamSymbol;
+    readonly routes?: Routes;
+    readonly Component: RoutingComponent;
+};
+
+export type RoutingConfig =
+    | RoutesConfig<any>
+    | PathParamConfig<any, any>
+    | SearchParamsConfig<any, any>
+    | BodyParamsConfig<any, any>
+    | HashParamConfig<any, any>;
+
+export type NestedRoutingConfig = Exclude<RoutingConfig, PathParamConfig<any, any>>;
+export type NestedComponentOrRoutes<Params, Nested extends NestedRoutingConfig> =
+    | JsxElement
+    | JsxComponent<Params>
+    | Nested
+    | ((params: Params) => Nested | Promise<Nested>);
+
+async function renderNested<Params, Nested extends NestedRoutingConfig>(
+    pathSegments: string[],
+    params: Params,
+    nested: NestedComponentOrRoutes<Params, Nested>,
+): Promise<JsxElement> {
+    if (nested === null || isJsxExpression(nested)) {
+        return nested;
+    } else if (routingSymbol in nested) {
+        return <nested.Component pathSegments={pathSegments} />;
+    } else if (nested instanceof Promise) {
+        return await nested;
+    } else {
+        const result = await nested(params);
+        if (result === null || isJsxExpression(result)) {
+            return result;
+        } else if (routingSymbol in result) {
+            return <result.Component pathSegments={pathSegments} />;
+        } else {
+            throw new Error("Invalid nested routes.");
+        }
+    }
+}
+
+export function pathParam<
+    ParamIn,
+    ParamOut,
+    Nested extends NestedComponentOrRoutes<ParamOut, NestedRoutingConfig>,
+>(schema: ZodType<ParamOut, any, ParamIn>, nested: Nested): PathParamConfig<ParamOut, Nested> {
+    return {
+        [routingSymbol]: pathParamSymbol,
+        Component: async ({ pathSegments }) => {
+            return renderNested(
+                pathSegments.slice(1),
+                unpack(schema, pathSegments[0] ? decodeURIComponent(pathSegments[0]) : undefined)!,
+                nested,
             );
-            const Routes = (getRoutes as (params: ParamOut) => Routes)(param!);
-            return <Routes pathSegments={pathSegments.slice(1)} />;
         },
-    );
+    };
 }
 
 export function searchParams<
     ParamsIn extends Record<string, unknown>,
     ParamsOut extends Record<string, unknown>,
-    Routes extends RoutingComponent<RoutingConfig>,
+    Nested extends NestedComponentOrRoutes<ParamsOut, NestedRoutingConfig>,
 >(
     schema: ZodType<ParamsOut, any, ParamsIn>,
-    getRoutes: Routes extends RoutingComponent<ParamsConfig<typeof pathParamsSymbol, any, any>>
-        ? "ERROR: Unexpected path parameters."
-        : (params: ParamsOut) => Routes,
-): RoutingComponent<ParamsConfig<typeof searchParamsSymbol, ParamsOut, Routes>> {
-    return createRoutingComponent(
-        searchParamsSymbol,
-        async ({ pathSegments }: RoutingComponentProps) => {
-            const params = parseUrlSearchParams(schema, useHttpContext().searchParams);
-            const Routes = (getRoutes as (params: ParamsOut) => Routes)(params!);
-            return <Routes pathSegments={pathSegments} />;
+    nested: Nested,
+): SearchParamsConfig<ParamsOut, Nested> {
+    return {
+        [routingSymbol]: searchParamsSymbol,
+        Component: async ({ pathSegments }) => {
+            return renderNested(
+                pathSegments,
+                parseUrlSearchParams(schema, useHttpContext().searchParams)!,
+                nested,
+            );
         },
-    );
+    };
 }
 
+const y = searchParams(z.object({ q: z.string() }), <></>);
+const y0 = searchParams(z.object({ q: z.string() }), null);
+const y10 = searchParams(z.object({ q: z.string() }), () =>
+    bodyParams(z.object({ x: z.string() }), ({ x }) => <></>),
+);
+const y101 = searchParams(z.object({ q: z.string() }), ({ q }) =>
+    bodyParams(z.object({ x: z.string() }), ({ x }) => <></>),
+);
+const y3 = searchParams(z.object({ q: z.string() }), ({ q }) => <></>);
+const y2 = searchParams(z.object({ q: z.string() }), routes({ "GET /": <></> }));
+const y22 = searchParams(z.object({ q: z.string() }), ({ q }) => routes({ "GET /": <></> }));
+const x = routes({
+    "/": searchParams(z.object({ q: z.string() }), ({ q }) => <></>),
+    "/2": searchParams(z.object({ q: z.string() }), ({ q }) => routes({ "GET /": <></> })),
+    "/3": searchParams(z.object({ q: z.string() }), ({ q }) =>
+        bodyParams(z.object({ x: z.string() }), ({ x }) => <></>),
+    ),
+});
+
 export function bodyParams<
-    ParamsIn extends Record<string, unknown>,
+    ParamsIn extends Record<string, unknown>, // input is something that always takes string????
     ParamsOut extends Record<string, unknown>,
-    Routes extends RoutingComponent<RoutingConfig>,
->(
-    schema: ZodType<ParamsOut, any, ParamsIn>,
-    getRoutes: Routes extends RoutingComponent<ParamsConfig<typeof pathParamsSymbol, any, any>>
-        ? "ERROR: Unexpected path parameters."
-        : (params: ParamsOut) => Routes,
-): RoutingComponent<ParamsConfig<typeof bodyParamsSymbol, ParamsOut, Routes>> {
-    return createRoutingComponent(
-        bodyParamsSymbol,
-        async ({ pathSegments }: RoutingComponentProps) => {
-            const params = parseUrlSearchParams(schema, useHttpContext().requestBody);
-            const Routes = (getRoutes as (params: ParamsOut) => Routes)(params!);
-            return <Routes pathSegments={pathSegments} />;
+    Nested extends NestedComponentOrRoutes<ParamsOut, NestedRoutingConfig>,
+>(schema: ZodType<ParamsOut, any, ParamsIn>, nested: Nested): BodyParamsConfig<ParamsOut, Nested> {
+    return {
+        [routingSymbol]: bodyParamsSymbol,
+        Component: async ({ pathSegments }) => {
+            return renderNested(
+                pathSegments,
+                parseUrlSearchParams(schema, useHttpContext().requestBody)!,
+                nested,
+            );
         },
-    );
+    };
 }
 
 export function hashParam<
     const ParamValues extends [string, ...string[]],
-    Routes extends RoutingComponent<RoutingConfig>,
->(
-    _paramValues: ParamValues,
-    Routes: Routes extends RoutingComponent<ParamsConfig<typeof pathParamsSymbol, any, any>>
-        ? "ERROR: Unexpected path parameters."
-        : Routes,
-): RoutingComponent<ParamsConfig<typeof hashParamSymbol, ParamValues, Routes>> {
-    return createRoutingComponent(hashParamSymbol, ({ pathSegments }) => (
-        <Routes pathSegments={pathSegments} />
-    ));
+    Nested extends NestedComponentOrRoutes<ParamValues, NestedRoutingConfig>,
+>(_paramValues: ParamValues, nested: Nested): HashParamConfig<ParamValues, Nested> {
+    return {
+        [routingSymbol]: hashParamSymbol,
+        Component: async ({ pathSegments }) => renderNested(pathSegments, undefined!, nested),
+    };
 }
 
 /**
@@ -167,159 +242,56 @@ export function hashParam<
  *
  * @param def The definition of the routes adhering to the constraints mentioned above.
  */
-export function routes<Def extends RoutesDefinition<Def>>(
-    def: Def,
-): RoutingComponent<RoutesConfig<Def>> {
-    // const routes = Object.entries(def) as [
-    //     string,
-    //     (
-    //         | JsxExpression
-    //         | JsxComponent
-    //         | RoutingComponent<RoutingConfig>
-    //         | (() => Promise<RoutingComponent<RoutingConfig>>)
-    //     ),
-    // ][];
+export function routes<Def extends RoutesDefinition<Def>>(def: Def): RoutesConfig<Def> {
+    const lookup = def as Record<string, NestedComponentOrRoutes<{}, NestedRoutingConfig>>;
+    const paramsPaths = Object.keys(lookup).filter((key) => key.startsWith("/:"));
+    const pathParamConfig = paramsPaths[0] ? lookup[paramsPaths[0]] : undefined;
 
-    const params = Object.keys(def).filter((key) => key.startsWith("/:"));
-    const Params = params[0] && (def as any)[params[0]];
-    const lookup = def as Record<
-        string,
-        | JsxElement
-        | JsxComponent
-        | RoutingComponent<RoutingConfig>
-        | (() => Promise<RoutingComponent<RoutingConfig>>)
-    >;
-
-    if (params.length > 1) {
-        throw new Error(`Invalid multiple path params '${params.join(", ")}'.`);
+    if (paramsPaths.length > 1) {
+        throw new Error(`Invalid multiple path params '${paramsPaths.join(", ")}'.`);
     }
 
-    return createRoutingComponent(routesSymbol, async ({ pathSegments }) => {
-        const { method } = useHttpContext();
+    return {
+        [routingSymbol]: routesSymbol,
+        Component: async ({ pathSegments }) => {
+            const { method } = useHttpContext();
 
-        console.log("==============", pathSegments);
+            console.log("==============", pathSegments);
 
-        // If we're at the last path segment, there must be a matching GET or POST route.
-        if (pathSegments.length <= 1) {
-            const key = `${method} /${pathSegments[0] ?? ""}`;
+            // If we're at the last path segment, there must be a matching GET or POST route.
+            if (pathSegments.length <= 1) {
+                const key = `${method} /${pathSegments[0] ?? ""}`;
+                const match = lookup[key];
+                console.log("exact route", key, !!match);
+                if (match) {
+                    return renderNested([], {}, match);
+                }
+            }
+
+            // Otherwise, first check if we have a static path segment that matches.
+            const key = `/${pathSegments[0] ?? ""}`;
             const match = lookup[key];
-            console.log("exact route", key, !!match);
+            console.log("static path segment", { key, match: match });
             if (match) {
-                if (isJsxExpression(match)) {
-                    return match;
-                } else if (!("kind" in match) && typeof match === "function") {
-                    const result = await match();
-                    if (!!result && !("kind" in result)) {
-                        return result;
-                    } else {
-                        throw new Error("Invalid routes definition.");
-                    }
-                } else {
-                    throw new Error("Invalid routes definition.");
-                }
+                return renderNested(pathSegments.slice(1), {}, match);
             }
-        }
 
-        // Otherwise, first check if we have a static path segment that matches.
-        const key = `/${pathSegments[0] ?? ""}`;
-        const Match = lookup[key];
-        console.log("static path segment", { key, match: Match });
-        if (Match) {
-            if ("kind" in Match) {
-                return <Match pathSegments={pathSegments.slice(1)} />;
-            } else if (typeof Match === "function") {
-                const SubMatch = await Match();
-                if (!!SubMatch && typeof SubMatch === "function" && "kind" in SubMatch) {
-                    return <SubMatch pathSegments={pathSegments.slice(1)} />;
-                } else {
-                    throw new Error("Invalid routes definition.");
-                }
+            // Else, check if we have a path param that matches, fall back to the '/' route,
+            // or give up because we can't find a match.
+            if (pathParamConfig) {
+                console.log("params match", { params: paramsPaths });
+                return renderNested(pathSegments, {}, pathParamConfig);
             } else {
-                throw new Error("Invalid routes definition.");
-            }
-        }
-
-        // Else, check if we have a path param that matches, fall back to the '/' route,
-        // or give up because we can't find a match.
-        if (params.length === 1) {
-            console.log("params match", { params });
-            return <Params pathSegments={pathSegments} />;
-        } else {
-            const Fallback = lookup["/"];
-            console.log("fallback", Fallback);
-            if (Fallback) {
-                if ("kind" in Fallback) {
-                    console.log("rendering fallback");
-                    return <Fallback pathSegments={pathSegments} />;
+                const fallback = lookup["/"];
+                console.log("fallback", fallback);
+                if (fallback) {
+                    return renderNested(pathSegments, {}, fallback);
                 } else {
-                    throw new Error("Invalid routes definition.");
+                    throw new HttpError("NotFound");
                 }
-            } else {
-                throw new HttpError("NotFound");
             }
-        }
-
-        // // Render the first matching route, otherwise throw a 404 error.
-        // for (const [route, Render] of routes) {
-        //     // If we have a "leaf" route in the routing tree, we can render it directly as long as
-        //     // we've consumed all path segments.
-        //     if (!("kind" in Render)) {
-        //         console.log("match JSX", {
-        //             route,
-        //             Render,
-        //             method,
-        //             pathSegments,
-        //             match: `${method} /${pathSegments[0] ?? ""}`,
-        //         });
-        //         if (route === `${method} /${pathSegments[0] ?? ""}`) {
-        //             console.log("hier");
-        //             if (pathSegments.length > 1) {
-        //                 throw new HttpError("NotFound");
-        //             } else if (isJsxExpression(Render)) {
-        //                 return <>{Render}</>;
-        //             } else {
-        //                 return <Render />;
-        //             }
-        //         } else if (route === `/${pathSegments[0] ?? ""}`) {
-        //             console.log("hier 2");
-        //             const SubRender = await Render();
-        //             if (isJsxExpression(Render)) {
-        //                 return <>{SubRender}</>;
-        //             } else {
-        //                 return <SubRender pathSegments={pathSegments.slice(1)} />;
-        //             }
-        //         } else {
-        //             continue;
-        //         }
-        //     }
-
-        //     // Otherwise, we have to descend recursively into the routing tree.
-        //     switch (Render.kind) {
-        //         case routesSymbol: {
-        //             console.log("routesSymbol", { pathSegments, route });
-        //             if (pathSegments[0]?.startsWith(route.slice(1))) {
-        //                 console.log("matched");
-        //                 return <Render pathSegments={pathSegments.slice(route === "/" ? 0 : 1)} />;
-        //             } else {
-        //                 continue;
-        //             }
-        //         }
-        //         case pathParamsSymbol:
-        //         case searchParamsSymbol:
-        //         case bodyParamsSymbol:
-        //         case hashParamSymbol: {
-        //             return <Render pathSegments={pathSegments} />;
-        //         }
-        //         default: {
-        //             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        //             const exhaustiveSwitch: never = Render;
-        //             throw new Error("Invalid routes definition.");
-        //         }
-        //     }
-        // }
-
-        // throw new HttpError("NotFound");
-    });
+        },
+    };
 }
 
 /**
@@ -331,25 +303,37 @@ export function routes<Def extends RoutesDefinition<Def>>(
  * @param params If the lazily-loaded routes definition depends on routing parameters, provide these
  *   parameters so that they can get passed through when the code is lazily loaded and executed.
  */
-export function lazy<Routes extends RoutingComponent<RoutesConfig<any>>, Args extends any[]>(
-    loadModule: () => Promise<{ default: Routes | ((...args: Args) => Routes | Promise<Routes>) }>,
+export function lazy<Def extends RoutesDefinition<Def>, Args extends any[]>(
+    loadModule: () => Promise<{
+        default:
+            | RoutesConfig<Def>
+            | ((...args: Args) => RoutesConfig<Def> | Promise<RoutesConfig<Def>>);
+    }>,
     ...params: Args
-): Routes {
-    let Component: Routes | undefined;
-    return createRoutingComponent(routesSymbol, async ({ pathSegments }) => {
-        if (!Component) {
-            const imported = (await loadModule()).default;
-            if (!("kind" in imported)) {
-                Component = await imported(...params);
-            } else if ("kind" in imported && imported.kind === routesSymbol) {
-                Component = imported;
-            } else {
-                throw new Error("Invalid routes definition.");
+): RoutesConfig<Def> {
+    let Component: RoutingComponent | undefined;
+    return {
+        [routingSymbol]: routesSymbol,
+        Component: async ({ pathSegments }) => {
+            if (!Component) {
+                const imported = (await loadModule()).default;
+                if (routingSymbol in imported) {
+                    Component = imported.Component;
+                } else if (typeof imported === "function") {
+                    const nested = await imported(...params);
+                    if (routingSymbol in nested) {
+                        Component = nested.Component;
+                    } else {
+                        throw new Error("Invalid routes definition.");
+                    }
+                } else {
+                    throw new Error("Invalid routes definition.");
+                }
             }
-        }
 
-        return <Component pathSegments={pathSegments} />;
-    }) as Routes;
+            return <Component pathSegments={pathSegments} />;
+        },
+    };
 }
 
 /**
@@ -362,17 +346,20 @@ export function lazy<Routes extends RoutingComponent<RoutesConfig<any>>, Args ex
  */
 export function wrapRoutes<Def extends RoutesDefinition<Def>>(
     Wrapper: JsxComponent<PropsWithChildren>,
-    Routes: RoutingComponent<RoutesConfig<Def>>,
-): RoutingComponent<RoutesConfig<Def>> {
-    return createRoutingComponent(routesSymbol, ({ pathSegments }) => (
-        <Wrapper>
-            <Routes pathSegments={pathSegments} />
-        </Wrapper>
-    ));
+    routes: RoutesConfig<Def>,
+): RoutesConfig<Def> {
+    return {
+        ...routes,
+        Component: ({ pathSegments }) => (
+            <Wrapper>
+                <routes.Component pathSegments={pathSegments} />
+            </Wrapper>
+        ),
+    };
 }
 
 export type CombinedRoutes<Def extends Record<string, unknown>> = Def extends RoutesDefinition<Def>
-    ? RoutingComponent<RoutesConfig<Def>>
+    ? RoutesConfig<Def>
     : never;
 
 /**
@@ -383,42 +370,42 @@ export function combineRoutes<
     Def1 extends RoutesDefinition<Def1>,
     Def2 extends RoutesDefinition<Def2>,
 >(
-    Routes1: RoutingComponent<RoutesConfig<Def1>>,
+    routes1: RoutesConfig<Def1>,
     routes2: Extract<keyof Def1, keyof Def2> extends never
         ? "ERROR: Paths of the combined routes configs must not overlap."
-        : RoutingComponent<RoutesConfig<Def2>>,
+        : RoutesConfig<Def2>,
 ): CombinedRoutes<Def1 & Def2> {
-    return createRoutingComponent(routesSymbol, ({ pathSegments }) => (
-        <ErrorBoundary
-            ErrorView={({ error }) => {
-                // TODO: Can we distinguish this somehow else?
-                if (error instanceof HttpError && error.errorCode === "NotFound") {
-                    const Routes2 = routes2 as RoutingComponent<RoutesConfig<Def2>>;
-                    return <Routes2 pathSegments={pathSegments} />;
-                } else {
-                    throw error;
-                }
-            }}
-        >
-            <Routes1 pathSegments={pathSegments} />
-        </ErrorBoundary>
-    )) as CombinedRoutes<Def1 & Def2>;
+    return {
+        [routingSymbol]: routesSymbol,
+        Component: ({ pathSegments }) => (
+            <ErrorBoundary
+                ErrorView={({ error }) => {
+                    if (error instanceof HttpError && error.errorCode === "NotFound") {
+                        if (typeof routes2 === "object" && routingSymbol in routes2) {
+                            return <routes2.Component pathSegments={pathSegments} />;
+                        } else {
+                            throw new Error("Invalid routes definition.");
+                        }
+                    } else {
+                        throw error;
+                    }
+                }}
+            >
+                <routes1.Component pathSegments={pathSegments} />
+            </ErrorBoundary>
+        ),
+    } as CombinedRoutes<Def1 & Def2>;
 }
 
-export type RoutesFunction<Routes extends RoutingComponent<RoutingConfig>> = () =>
-    | Routes
-    | Promise<Routes>;
-
-export type RouterProps<Routes extends RoutingComponent<RoutingConfig>> = {
+export type RoutesFunction<Routes extends RoutingConfig> = () => Routes | Promise<Routes>;
+export type RouterProps<Routes extends RoutingConfig> = {
     readonly routes: RoutesFunction<Routes>;
 };
 
 /** A router that determines the route that should be rendered based on the current HTTP request. */
-export async function Router<Routes extends RoutingComponent<RoutingConfig>>({
-    routes,
-}: RouterProps<Routes>) {
+export async function Router<Routes extends RoutingConfig>(props: RouterProps<Routes>) {
     const { method, requestPath } = useHttpContext();
-    const Routes = await routes();
+    const routes = await props.routes();
 
     if (method !== "GET" && useRequester() !== "HyTTS") {
         throw new HttpError(
@@ -427,26 +414,20 @@ export async function Router<Routes extends RoutingComponent<RoutingConfig>>({
         );
     }
 
-    return <Routes pathSegments={requestPath} />;
+    return <routes.Component pathSegments={requestPath} />;
 }
 
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 export interface RegisterRoutes {
+    // provided by library user:
     // routes: RoutingConfig;
 }
 
 export type GetRoutes = RegisterRoutes extends {
-    routes: infer T extends RoutingConfig;
+    routes: infer T extends NestedRoutingConfig;
 }
     ? T
-    : RoutingConfig;
-
-function createRoutingComponent<Kind extends RoutingConfig["kind"]>(
-    kind: Kind,
-    component: JsxComponent<RoutingComponentProps>,
-) {
-    return Object.assign(component, { kind });
-}
+    : NestedRoutingConfig;
 
 export type SomeRouteParams = {
     readonly path?: Record<string, unknown>;
@@ -455,7 +436,7 @@ export type SomeRouteParams = {
     readonly hash?: string;
 };
 
-export type RoutesInfo<Routes extends RoutingConfig = GetRoutes> = Flatten<{
+export type RoutesInfo<Routes extends NestedRoutingConfig = GetRoutes> = Flatten<{
     [T in CollectRoutes<Routes, "", {}, {}, {}, []> as T[1]]: {
         method: T[0];
         params: MakeEmptyPropertiesOptional<{
@@ -468,13 +449,13 @@ export type RoutesInfo<Routes extends RoutingConfig = GetRoutes> = Flatten<{
 }>;
 
 type CollectRoutes<
-    Routes extends RoutingConfig | (() => Promise<RoutingConfig>),
+    Routes extends NestedComponentOrRoutes<any, any>,
     Path extends string,
     PathParams extends Record<string, any>,
     SearchParams extends Record<string, any>,
     BodyParams extends Record<string, any>,
     HashParam extends string[],
-> = Routes extends () => Promise<infer SubRoutes extends RoutingConfig>
+> = Routes extends () => Promise<infer SubRoutes extends NestedRoutingConfig>
     ? CollectRoutes<SubRoutes, Path, PathParams, SearchParams, BodyParams, HashParam>
     : Routes extends RoutesConfig<infer Def>
       ? CollectRoutesFromRoutesDefinition<
@@ -486,16 +467,19 @@ type CollectRoutes<
             BodyParams,
             HashParam
         >
-      : Routes extends ParamsConfig<typeof searchParamsSymbol, infer Params, infer SubRoutes>
+      : Routes extends SearchParamsConfig<infer Params, infer SubRoutes>
         ? CollectRoutes<SubRoutes, Path, PathParams, SearchParams & Params, BodyParams, HashParam>
-        : Routes extends ParamsConfig<typeof bodyParamsSymbol, infer Params, infer SubRoutes>
+        : Routes extends BodyParamsConfig<infer Params, infer SubRoutes>
           ? CollectRoutes<SubRoutes, Path, PathParams, SearchParams, BodyParams & Params, HashParam>
-          : Routes extends ParamsConfig<
-                  typeof hashParamSymbol,
-                  infer Param extends string[],
-                  infer SubRoutes
+          : Routes extends HashParamConfig<infer Param extends string[], infer SubRoutes>
+            ? CollectRoutes<
+                  SubRoutes,
+                  Path,
+                  PathParams,
+                  SearchParams,
+                  BodyParams,
+                  [...HashParam, ...Param]
               >
-            ? CollectRoutes<SubRoutes, Path, PathParams, SearchParams, BodyParams, Param>
             : never;
 
 type CollectRoutesFromRoutesDefinition<
@@ -516,7 +500,7 @@ type CollectRoutesFromRoutesDefinition<
           HashParam,
       ]
     : Key extends `/:${infer ParamPath}?`
-      ? Routes[Key] extends ParamsConfig<typeof pathParamsSymbol, infer Param, infer SubRoutes>
+      ? Routes[Key] extends PathParamConfig<infer Param, infer SubRoutes>
           ? CollectRoutes<
                 SubRoutes,
                 CombinePaths<Path, `:${ParamPath}`>,
@@ -527,7 +511,7 @@ type CollectRoutesFromRoutesDefinition<
             >
           : never
       : Key extends `/:${infer ParamPath}`
-        ? Routes[Key] extends ParamsConfig<typeof pathParamsSymbol, infer Param, infer SubRoutes>
+        ? Routes[Key] extends PathParamConfig<infer Param, infer SubRoutes>
             ? CollectRoutes<
                   SubRoutes,
                   CombinePaths<Path, `:${ParamPath}`>,
@@ -557,19 +541,19 @@ type CombinePaths<Path extends string, SubPath extends string> = Path extends `$
       : `${Path}/${SubPath}`;
 
 type MakeEmptyPropertiesOptional<T extends Record<string, any>> = {
-    [K in keyof T as keyof RemoveUnnecessaryProperties2<T[K]> extends never
+    [K in keyof T as keyof RemoveUnnecessaryProperties<T[K]> extends never
         ? never
         : T[K] extends []
           ? never
           : K]: T[K];
 } & {
-    [K in keyof T as keyof RemoveUnnecessaryProperties2<T[K]> extends never
+    [K in keyof T as keyof RemoveUnnecessaryProperties<T[K]> extends never
         ? K
         : T[K] extends []
           ? K
           : never]?: T[K];
 };
 
-type RemoveUnnecessaryProperties2<T> = {
+type RemoveUnnecessaryProperties<T> = {
     [K in keyof T as keyof T[K] extends never ? never : K]: T[K];
 };
