@@ -1,16 +1,11 @@
 import { z } from "zod";
 import { type HttpMethod, httpMethods } from "@/http/http-context";
 import {
-    bodyParams,
     type GetRoutes,
-    hashParam,
-    type NestedRoutingConfig,
-    pathParam,
+    routeParams,
     routes,
-    type RoutesFunction,
+    type RoutesConfig,
     type RoutesInfo,
-    type RoutingConfig,
-    searchParams,
     type SomeRouteParams,
 } from "@/routing/router-3";
 import { toUrlSearchParams } from "@/serialization/url-params";
@@ -60,46 +55,45 @@ export function isHref(value: unknown): value is Href<HttpMethod> {
  * excluding the body params which cannot be encoded into a URL. The resulting URL can be used as a
  * the `href` prop of an anchor tag or in a `fetch` request, for instance.
  */
-export const createHref = null;
-// export function createHref<
-//     Routes extends RoutesFunction<NestedRoutingConfig> = () => GetRoutes,
-//     Info extends Record<string, any> = RoutesInfo<Awaited<ReturnType<Routes>>>,
-// >() {
-//     return <Path extends keyof Info & string>(
-//         path: Path,
-//         ...routeParams: ToUrlParams<Info[Path]["params"]>
-//     ): Href<Info[Path]["method"]> => {
-//         const [httpMethod, url] = path.split(" ");
-//         const method = httpMethod as HttpMethod;
-//         if (!httpMethods.includes(method) || !url) {
-//             throw new Error(`Invalid HTTP method in path '${path}'.`);
-//         }
+export function createHref<
+    Routes extends RoutesConfig<any> | Promise<RoutesConfig<any>> = GetRoutes,
+    Info extends Record<string, any> = RoutesInfo<Awaited<Routes>>,
+>() {
+    return <Path extends keyof Info & string>(
+        path: Path,
+        ...routeParams: ToUrlParams<Info[Path]["params"]>
+    ): Href<Info[Path]["method"]> => {
+        const [httpMethod, url] = path.split(" ");
+        const method = httpMethod as HttpMethod;
+        if (!httpMethods.includes(method) || !url) {
+            throw new Error(`Invalid HTTP method in path '${path}'.`);
+        }
 
-//         const params = (routeParams[0] ?? {}) as SomeRouteParams;
-//         return {
-//             [hrefSymbol]: null,
-//             method,
-//             url:
-//                 (url.includes(":") ? replacePathParams(url, params.path) : url) +
-//                 (params.search ? `?${toUrlSearchParams(params.search)}` : "") +
-//                 (params.hash ? `#${params.hash}` : ""),
-//             body: toUrlSearchParams(params.body ?? {}),
-//         };
+        const params = (routeParams[0] ?? {}) as SomeRouteParams;
+        return {
+            [hrefSymbol]: null,
+            method,
+            url:
+                (url.includes(":") ? replacePathParams(url, params.path) : url) +
+                (params.search ? `?${toUrlSearchParams(params.search)}` : "") +
+                (params.hash ? `#${params.hash}` : ""),
+            body: toUrlSearchParams(params.body),
+        };
 
-//         function replacePathParams(url: string, pathParams: Record<string, unknown> | undefined) {
-//             Object.entries(pathParams ?? {}).forEach(([key, value]) => {
-//                 const parameter = value ? `/${encodeURIComponent(`${value}`)}` : "";
-//                 url = url.replaceAll(`/:${key}`, parameter);
-//             });
+        function replacePathParams(url: string, pathParams: Record<string, unknown> | undefined) {
+            Object.entries(pathParams ?? {}).forEach(([key, value]) => {
+                const parameter = value ? `/${encodeURIComponent(`${value}`)}` : "";
+                url = url.replaceAll(`/:${key}`, parameter);
+            });
 
-//             // There might be leftover optional path parameters that we have to remove
-//             url = url.replaceAll(/\/:[^/]*/g, "");
+            // There might be leftover optional path parameters that we have to remove
+            url = url.replaceAll(/\/:[^/]*/g, "");
 
-//             // If the URL is now empty, return "/" so that the URL always starts with a leading slash
-//             return url ? url : "/";
-//         }
-//     };
-// }
+            // If the URL is now empty, return "/" so that the URL always starts with a leading slash
+            return url ? url : "/";
+        }
+    };
+}
 
 // export const href = createHref();
 
@@ -108,75 +102,61 @@ function Q(props: { q: string }) {
 }
 
 function xx() {
-    const y = () =>
-        routes({
-            "GET /": () => null,
-            "/search": searchParams(z.object({ q: z.string() }), Q),
-            "/search2": searchParams(z.object({ q: z.string() }), ({ q }) => <Q q={q} />),
-            "/search3": searchParams(z.object({ q: z.string() }), ({ q }) =>
-                routes({ "GET /": <Q q={q} /> }),
+    const y = routes({
+        "GET /": () => null,
+        "/search": routeParams({ search: z.object({ q: z.string() }) }, Q),
+        "/search2": routeParams({ search: z.object({ q: z.string() }) }, ({ q }) => <Q q={q} />),
+        "/search3": routeParams({ search: z.object({ q: z.string() }) }, ({ q }) =>
+            routes({ "GET /": <Q q={q} /> }),
+        ),
+        "/search-async": routeParams({ search: z.object({ q: z.string() }) }, ({ q }) =>
+            Promise.resolve(routes({ "GET /": <Q q={q} /> })),
+        ),
+        "/body": routeParams({ body: z.object({ x: z.string() }) }, (s) => <>{s}</>),
+        "/a": routes({
+            "POST /b": () => null,
+            "/:c": routeParams({ path: z.object({ c: z.string() }) }, (c) =>
+                routes({
+                    "GET /": () => null,
+                    "GET /d": () => null,
+                    "/d": routeParams({ search: z.object({ d: z.string() }) }, ({ d }) =>
+                        routes({
+                            "GET /e": () => null,
+                            "/f": routeParams({ body: z.object({ f: z.string() }) }, ({ f }) =>
+                                routes({
+                                    "GET /g": () => null,
+                                    "/h": routeParams({ hash: ["a", "b", "c"] }, (s) =>
+                                        routes({
+                                            "GET /i": () => null,
+                                        }),
+                                    ),
+                                }),
+                            ),
+                        }),
+                    ),
+                }),
             ),
-            "/search-async": searchParams(z.object({ q: z.string() }), ({ q }) =>
-                Promise.resolve(routes({ "GET /": <Q q={q} /> })),
-            ),
-            "/search-path": searchParams(z.object({ q: z.string() }), ({ q }) =>
-                pathParam(z.string(), (s) => <>{s}</>),
-            ),
-            "/search-nested1": searchParams(z.object({ q: z.string() }), ({ q }) =>
-                searchParams(z.object({ x: z.string() }), ({ x }) => <>{x + q}</>),
-            ),
-            "/search-nested2": searchParams(z.object({ q: z.string() }), ({ q }) =>
-                bodyParams(z.object({ x: z.boolean() }), (s) => <>{s}</>),
-            ),
-            "/search-nested3": searchParams(z.object({ q: z.boolean() }), ({ q }) =>
-                hashParam(["a"], (a) => <>{}</>),
-            ),
-            "/body": bodyParams(z.object({ x: z.string() }), (s) => <>{s}</>),
-            "/a": routes({
-                "POST /b": () => null,
-                "/:c?": pathParam(z.string().optional(), (c) =>
-                    routes({
-                        "GET /": () => null,
-                        "GET /d": () => null,
-                        "/d": searchParams(z.object({ d: z.string() }), ({ d }) =>
-                            routes({
-                                "GET /e": () => null,
-                                "/f": bodyParams(z.object({ f: z.string() }), ({ f }) =>
-                                    routes({
-                                        "GET /g": () => null,
-                                        "/h": hashParam(["a", "b", "c"], (s) =>
-                                            routes({
-                                                "GET /i": () => null,
-                                                "/:j?": pathParam(z.string().default(""), (j) =>
-                                                    routes({
-                                                        "POST /k": () => null,
-                                                    }),
-                                                ),
-                                            }),
-                                        ),
-                                    }),
-                                ),
-                            }),
-                        ),
-                    }),
-                ),
-            }),
-        });
-    // const toUrl = createHref<typeof y>();
-    // const a = toUrl("GET /");
-    // const a2 = toUrl("GET /a/:c/d/e", { path: { c: "c" }, search: { d: "d" } });
-    // const b = toUrl("GET /a/:c/d/f/h/i", {
-    //     path: { c: "c" },
-    //     search: { d: "d" },
-    //     body: { f: "f" },
-    //     hash: "a",
-    // });
-    // const yz = toUrl("GET /a/:c/d/f/h/i", {
-    //     path: { c: "1" },
-    //     search: { d: "" },
-    //     body: { f: "f" },
-    //     hash: "a",
-    // });
+        }),
+    });
+
+    type TT = RoutesInfo<Awaited<typeof y>>;
+
+    const toUrl = createHref<typeof y>();
+    const a = toUrl("GET /");
+    const a2 = toUrl("GET /a/:c/d/e", { path: { c: "c" }, search: { d: "d" } });
+    const b = toUrl("GET /a/:c/d/f/h/i", {
+        path: { c: "c" },
+        search: { d: "d" },
+        body: { f: "f" },
+        hash: "a",
+    });
+    const yz = toUrl("GET /a/:c/d/f/h/i", {
+        path: { c: "1" },
+        search: { d: "" },
+        body: { f: "f" },
+        hash: "b",
+    });
+
     // type X4 = RoutesInfo["GET /a/:c/d/e"];
     // type qqqq = RoutesInfo["GET /a/:c"]["params"];
     // type X31 = RoutesInfo["GET /"]["params"];
