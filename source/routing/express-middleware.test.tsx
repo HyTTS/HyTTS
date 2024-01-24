@@ -77,4 +77,14 @@
 //                 expect(response.status).toBe(500);
 //             },
 //         ));
+
+// it("disallows requests with the wrong mime type", async () => {
+//     const rs = routes({ "GET /p": <>test</> });
+//     const href = createHref<typeof rs>();
+
+//     await expect(() => render(rs, href("GET /p"), () => undefined)).rejects.toThrow(
+//         "BadRequest",
+//     );
+// });
+
 // });

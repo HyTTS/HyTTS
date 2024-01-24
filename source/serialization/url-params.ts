@@ -29,7 +29,7 @@ export function parseUrlSearchParams<
                   strictNullHandling: true,
                   // Ignore the leading `?`, if any.
                   ignoreQueryPrefix: true,
-                  // Do not allow arrays with more than 100 elements so that noone can attempt a denial of
+                  // Do not allow arrays with more than 100 elements so that no one can attempt a denial of
                   // service attack by sending, e.g., `&a[10000000000]=0`.
                   arrayLimit: 100,
               }),

@@ -1,11 +1,16 @@
 import get from "lodash/get";
-import { z, type ZodType, type ZodTypeDef } from "zod";
+import type { z, ZodType, ZodTypeDef } from "zod";
 import { createFrame, type FrameMetadata } from "@/dom/frame";
 import { collectPath, type PropertySelector } from "@/form/property-path";
 import { HttpStatusCode, useHttpContext, useRequestHeader } from "@/http/http-context";
 import type { JSX, JsxComponent, JsxElement } from "@/jsx/jsx-types";
 import type { FormValues, Href } from "@/routing/href";
 import type { FormElement } from "@/routing/router";
+import {
+    type MethodDependantParamsConfig,
+    type ParamsConfig,
+    routeParams,
+} from "@/routing/router-3";
 import { toPartialSchema, type ToPartialSchema } from "@/serialization/to-partial-schema";
 import { parseUrlSearchParams } from "@/serialization/url-params";
 
@@ -175,35 +180,31 @@ export function createForm<FormStateSchema extends SomeFormSchema>(
         );
     };
 
-    async function getPartialFormState(): Promise<PartialFormState> {
-        const schema = await getSchema();
+    type FormParamsConfig = MethodDependantParamsConfig<{
+        GET: ParamsConfig<undefined, InputFormState, undefined, undefined, JsxElement>;
+        POST: ParamsConfig<undefined, undefined, InputFormState, undefined, JsxElement>;
+    }>;
+
+    function getPartialFormState(schema: FormStateSchema): PartialFormState {
         const { method, searchParams, requestBody } = useHttpContext();
         const paramsSource = method === "GET" ? searchParams : requestBody;
-
-        const { $form } = parseUrlSearchParams(
-            z.object({ $form: toPartialSchema(schema) }),
-            paramsSource,
-        )!;
-
-        return $form!;
+        return parseUrlSearchParams(toPartialSchema(schema), paramsSource)!;
     }
 
     Form.update = (
         updateState: (state: PartialFormState) => PartialFormState | Promise<PartialFormState>,
-    ): FormElement<InputFormState> => {
-        return (<Update />) as any;
-
-        async function Update() {
-            const updatedState = await updateState(await getPartialFormState());
-            const isValid = (await getSchema()).safeParse(updatedState).success;
+    ): FormParamsConfig =>
+        (async () => {
+            const schema = await getSchema();
+            const updatedState = await updateState(getPartialFormState(schema));
+            const isValid = schema.safeParse(updatedState).success;
 
             return (
                 <HttpStatusCode code={isValid ? 200 : 422}>
                     <Form formState={updatedState} />
                 </HttpStatusCode>
             );
-        }
-    };
+        }) as any;
 
     Form.submit = (
         /**
@@ -211,36 +212,34 @@ export function createForm<FormStateSchema extends SomeFormSchema>(
          * some database, sending an e-mail, etc.
          */
         action: JsxComponent<{ formState: z.output<FormStateSchema> }>,
-    ): FormElement<InputFormState> => {
-        return (<Submit />) as any;
+    ): FormParamsConfig =>
+        (async () => {
+            const schema = await getSchema();
+            const partialFormState = getPartialFormState(schema);
+            const validationResult = schema.safeParse(partialFormState);
 
-        async function Submit() {
-            const formState = await getPartialFormState();
-            const result = (await getSchema()).safeParse(formState);
-
-            if (result.success) {
+            if (validationResult.success) {
                 // The submit route is often used for validation-only purposes as well, because in
                 // some (or probably most?) cases, a form validation is just a form submission without
                 // the side effect after successful validation. This is purely a DX optimization, saving
                 // the developer from registering two routes (validation and submission) per form when
                 // one suffices in most cases.
                 // The browser tells us whether this is a validation-only request via an HTTP header. So
-                // if this header is sent, we don't execute the submit action the form.
-                const validationOnly = !!useRequestHeader("x-hy-validate-form");
-                return validationOnly ? (
-                    <Form formState={formState} />
+                // if this header is sent, we don't execute the submit action of the form.
+                const shouldValidateOnly = useRequestHeader("x-hy-validate-form") === "true";
+                return shouldValidateOnly ? (
+                    <Form formState={partialFormState} />
                 ) : (
-                    action({ formState: result.data })
+                    action({ formState: validationResult.data })
                 );
             } else {
                 return (
                     <HttpStatusCode code={422}>
-                        <Form formState={formState} />
+                        <Form formState={partialFormState} />
                     </HttpStatusCode>
                 );
             }
-        }
-    };
+        }) as any;
 
     return Form;
 }

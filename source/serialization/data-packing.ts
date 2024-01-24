@@ -89,15 +89,7 @@ export function unpack<Output, Def extends ZodTypeDef, Input>(
         return undefined;
     }
 
-    try {
-        return schema.parse(unpackRecursive(schema, data, false));
-    } catch (e: unknown) {
-        if (e instanceof ZodError) {
-            throw new HttpError("BadRequest", e);
-        } else {
-            throw e;
-        }
-    }
+    return schema.parse(unpackRecursive(schema, data, false));
 
     function unpackRecursive(schema: ZodType, data: any, insideUnion: boolean): any {
         if (

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { type HttpMethod, HttpResponse, Redirect } from "@/http/http-context";
 import { renderToString } from "@/jsx/jsx-runtime";
 import { createHref, type Href } from "@/routing/href-3";
-import { lazy, Router, routes, type RoutesConfig } from "@/routing/router-3";
+import { lazy, routeParams, Router, routes, type RoutesConfig } from "@/routing/router-3";
 
 describe("routing", () => {
     describe("basics routes", () => {
@@ -367,180 +367,179 @@ describe("routing", () => {
     //     //         });
     //     //     });
 
-    //     describe("parameters", () => {
-    //         it("supports (nested) path params", async () => {
-    //             const rs = () =>
+    // describe("parameters", () => {
+    //     it("supports (nested) path params", async () => {
+    //         const rs = routes({
+    //             "/:n": routeParams({ path: z.object({ n: z.number() }) }, ({ n }) =>
     //                 routes({
-    //                     "/:n": pathParam(z.number(), (n) =>
+    //                     "GET /n-only": () => <>{n}</>,
+    //                     "/:s": routeParams({ path: z.object({ s: z.string() }) }, ({ s }) =>
     //                         routes({
-    //                             "GET /n-only": () => <>{n}</>,
-    //                             "/:s": pathParam(z.string(), (s) =>
-    //                                 routes({
-    //                                     "GET /sn": () => {
-    //                                         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    //                                         const shouldBeString: string = s;
+    //                             "GET /sn": () => {
+    //                                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    //                                 const shouldBeString: string = s;
 
-    //                                         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    //                                         const shouldBeNumber: number = n;
+    //                                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    //                                 const shouldBeNumber: number = n;
 
-    //                                         return (
-    //                                             <>
-    //                                                 {s} {n}
-    //                                             </>
-    //                                         );
-    //                                     },
-    //                                 }),
-    //                             ),
+    //                                 return (
+    //                                     <>
+    //                                         {s} {n}
+    //                                     </>
+    //                                 );
+    //                             },
     //                         }),
     //                     ),
-    //                 });
-    //             const href = createHref<typeof rs>();
-
-    //             expect(href("GET /:n/n-only", { path: { n: 18 } }).body).toBe("");
-    //             expect(href("GET /:n/n-only", { path: { n: 18 } }).url).toBe("/18/n-only");
-    //             expect(href("GET /:n/n-only", { path: { n: 18 } }).method).toBe("GET");
-    //             expect(await render(rs, href("GET /:n/n-only", { path: { n: 18 } }))).toBe("18");
-
-    //             expect(href("GET /:n/:s/sn", { path: { s: "get?", n: 17 } }).body).toBe("");
-    //             expect(href("GET /:n/:s/sn", { path: { s: "get?", n: 17 } }).url).toBe("/17/get%3F/sn");
-    //             expect(href("GET /:n/:s/sn", { path: { s: "get?", n: 17 } }).method).toBe("GET");
-    //             expect(await render(rs, href("GET /:n/:s/sn", { path: { s: "get?", n: 17 } }))).toBe(
-    //                 "get? 17",
-    //             );
-    //             expect(await render(rs, href("GET /:n/:s/sn", { path: { s: "test", n: 31 } }))).toBe(
-    //                 "test 31",
-    //             );
-    //             await expect(() =>
-    //                 render(rs, href("GET /:n/:s/sn", { path: { s: "", n: 31 } })),
-    //             ).rejects.toThrow("NotFound");
-
-    //             // @ts-expect-error
-    //             href("GET /:n/n-only");
-
-    //             // @ts-expect-error
-    //             href("GET /:n/n-only", {});
-
-    //             // @ts-expect-error
-    //             href("GET /:n/n-only", { path: { n: "17" } });
-
-    //             // @ts-expect-error
-    //             href("GET /:n/:s/sn");
-
-    //             // @ts-expect-error
-    //             href("GET /:n/:s/sn", {});
-
-    //             // @ts-expect-error
-    //             href("GET /:n/:s/sn", { path: { s: 17 } });
-
-    //             // @ts-expect-error
-    //             href("GET /:n/:s/sn", { path: { n: "17" } });
-
-    //             await expect(() =>
-    //                 render(rs, href("GET /:n/n-only", { path: { n: "ab" as any } })),
-    //             ).rejects.toThrow("BadRequest");
-
-    //             await expect(() =>
-    //                 render(rs, href("GET /:n/:s/sn", { path: { s: "s", n: "a" as any } })),
-    //             ).rejects.toThrow("BadRequest");
-
-    //             await expect(() =>
-    //                 render(rs, { url: "/1//sn", method: "GET" } as Href<"GET">),
-    //             ).rejects.toThrow("NotFound");
+    //                 }),
+    //             ),
     //         });
+    //         const href = createHref<typeof rs>();
 
-    //         it("supports optional path params", async () => {
-    //             const rs = () =>
-    //                 routes({
-    //                     "/:n?": pathParam(z.string().max(4).optional(), (n) =>
+    //         expect(href("GET /:n/n-only", { path: { n: 18 } }).body).toBe("");
+    //         expect(href("GET /:n/n-only", { path: { n: 18 } }).url).toBe("/18/n-only");
+    //         expect(href("GET /:n/n-only", { path: { n: 18 } }).method).toBe("GET");
+    //         expect(await render(rs, href("GET /:n/n-only", { path: { n: 18 } }))).toBe("18");
+
+    //         expect(href("GET /:n/:s/sn", { path: { s: "get?", n: 17 } }).body).toBe("");
+    //         expect(href("GET /:n/:s/sn", { path: { s: "get?", n: 17 } }).url).toBe("/17/get%3F/sn");
+    //         expect(href("GET /:n/:s/sn", { path: { s: "get?", n: 17 } }).method).toBe("GET");
+    //         expect(await render(rs, href("GET /:n/:s/sn", { path: { s: "get?", n: 17 } }))).toBe(
+    //             "get? 17",
+    //         );
+    //         expect(await render(rs, href("GET /:n/:s/sn", { path: { s: "test", n: 31 } }))).toBe(
+    //             "test 31",
+    //         );
+    //         await expect(() =>
+    //             render(rs, href("GET /:n/:s/sn", { path: { s: "", n: 31 } })),
+    //         ).rejects.toThrow("NotFound");
+
+    //         // @ts-expect-error
+    //         href("GET /:n/n-only");
+
+    //         // @ts-expect-error
+    //         href("GET /:n/n-only", {});
+
+    //         // @ts-expect-error
+    //         href("GET /:n/n-only", { path: { n: "17" } });
+
+    //         // @ts-expect-error
+    //         href("GET /:n/:s/sn");
+
+    //         // @ts-expect-error
+    //         href("GET /:n/:s/sn", {});
+
+    //         // @ts-expect-error
+    //         href("GET /:n/:s/sn", { path: { s: 17 } });
+
+    //         // @ts-expect-error
+    //         href("GET /:n/:s/sn", { path: { n: "17" } });
+
+    //         await expect(() =>
+    //             render(rs, href("GET /:n/n-only", { path: { n: "ab" as any } })),
+    //         ).rejects.toThrow("BadRequest");
+
+    //         await expect(() =>
+    //             render(rs, href("GET /:n/:s/sn", { path: { s: "s", n: "a" as any } })),
+    //         ).rejects.toThrow("BadRequest");
+
+    //         await expect(() =>
+    //             render(rs, { url: "/1//sn", method: "GET" } as Href<"GET">),
+    //         ).rejects.toThrow("NotFound");
+    //     });
+
+    //     it("supports optional path params", async () => {
+    //         const rs = () =>
+    //             routes({
+    //                 "/:n?": routeParams(z.string().max(4).optional(), (n) =>
+    //                     routes({
+    //                         "GET /": () => {
+    //                             // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    //                             const shouldBeString: string | undefined = n;
+    //                             // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    //                             const m: typeof n = undefined;
+
+    //                             return <>n: {n ?? "undefined"}</>;
+    //                         },
+    //                         "/:m?": routeParams(z.string().optional(), (m) =>
+    //                             routes({
+    //                                 "GET /": () => (
+    //                                     <>
+    //                                         n: {n} m: {m}
+    //                                     </>
+    //                                 ),
+    //                             }),
+    //                         ),
+    //                     }),
+    //                 ),
+    //                 "/default": routes({
+    //                     "/:n?": routeParams(z.string().max(4).default("x"), (n) =>
+    //                         routes({
+    //                             "GET /": () => {
+    //                                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    //                                 const shouldBeString: string = n;
+
+    //                                 return <>n: {n}</>;
+    //                             },
+    //                         }),
+    //                     ),
+    //                 }),
+    //                 "/type-error1": routes({
+    //                     // @ts-expect-error
+    //                     "/:n?": pathParam(z.string(), () => routes({})),
+    //                 }),
+    //                 "/required-param-with-optional-schema": routes({
+    //                     "/:n": routeParams(z.string().optional(), (n) =>
     //                         routes({
     //                             "GET /": () => {
     //                                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
     //                                 const shouldBeString: string | undefined = n;
-    //                                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    //                                 const m: typeof n = undefined;
-
-    //                                 return <>n: {n ?? "undefined"}</>;
+    //                                 return <>n: {n}</>;
     //                             },
-    //                             "/:m?": pathParam(z.string().optional(), (m) =>
-    //                                 routes({
-    //                                     "GET /": () => (
-    //                                         <>
-    //                                             n: {n} m: {m}
-    //                                         </>
-    //                                     ),
-    //                                 }),
-    //                             ),
     //                         }),
     //                     ),
-    //                     "/default": routes({
-    //                         "/:n?": pathParam(z.string().max(4).default("x"), (n) =>
-    //                             routes({
-    //                                 "GET /": () => {
-    //                                     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    //                                     const shouldBeString: string = n;
+    //                 }),
+    //             });
+    //         const href = createHref<typeof rs>();
 
-    //                                     return <>n: {n}</>;
-    //                                 },
-    //                             }),
-    //                         ),
-    //                     }),
-    //                     "/type-error1": routes({
-    //                         // @ts-expect-error
-    //                         "/:n?": pathParam(z.string(), () => routes({})),
-    //                     }),
-    //                     "/required-param-with-optional-schema": routes({
-    //                         "/:n": pathParam(z.string().optional(), (n) =>
-    //                             routes({
-    //                                 "GET /": () => {
-    //                                     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    //                                     const shouldBeString: string | undefined = n;
-    //                                     return <>n: {n}</>;
-    //                                 },
-    //                             }),
-    //                         ),
-    //                     }),
-    //                 });
-    //             const href = createHref<typeof rs>();
+    //         expect(href("GET /:n", { path: { n: "a:?" } }).url).toBe("/a%3A%3F");
+    //         expect(href("GET /:n", { path: { n: undefined } }).url).toBe("/");
+    //         expect(href("GET /:n", {}).url).toBe("/");
+    //         expect(href("GET /:n/:m", { path: { n: "a" } }).url).toBe("/a");
+    //         expect(href("GET /:n/:m", { path: { n: "a", m: undefined } }).url).toBe("/a");
+    //         expect(href("GET /:n/:m", { path: { n: "a", m: "b" } }).url).toBe("/a/b");
 
-    //             expect(href("GET /:n", { path: { n: "a:?" } }).url).toBe("/a%3A%3F");
-    //             expect(href("GET /:n", { path: { n: undefined } }).url).toBe("/");
-    //             expect(href("GET /:n", {}).url).toBe("/");
-    //             expect(href("GET /:n/:m", { path: { n: "a" } }).url).toBe("/a");
-    //             expect(href("GET /:n/:m", { path: { n: "a", m: undefined } }).url).toBe("/a");
-    //             expect(href("GET /:n/:m", { path: { n: "a", m: "b" } }).url).toBe("/a/b");
+    //         // @ts-expect-error
+    //         href("GET /:n/:m", {});
+    //         // @ts-expect-error
+    //         href("GET /:n/:m", { path: {} });
+    //         // @ts-expect-error
+    //         href("GET /:n/:m", { path: { n: undefined, m: undefined } });
+    //         // @ts-expect-error
+    //         href("GET /:n/:m", { path: { m: "b" } });
 
-    //             // @ts-expect-error
-    //             href("GET /:n/:m", {});
-    //             // @ts-expect-error
-    //             href("GET /:n/:m", { path: {} });
-    //             // @ts-expect-error
-    //             href("GET /:n/:m", { path: { n: undefined, m: undefined } });
-    //             // @ts-expect-error
-    //             href("GET /:n/:m", { path: { m: "b" } });
+    //         // @ts-expect-error
+    //         href("GET /:n");
 
-    //             // @ts-expect-error
-    //             href("GET /:n");
+    //         expect(await render(rs, href("GET /:n", { path: { n: "a?b?" } }))).toBe("n: a?b?");
+    //         expect(await render(rs, href("GET /:n", {}))).toBe("n: undefined");
 
-    //             expect(await render(rs, href("GET /:n", { path: { n: "a?b?" } }))).toBe("n: a?b?");
-    //             expect(await render(rs, href("GET /:n", {}))).toBe("n: undefined");
+    //         expect(await render(rs, href("GET /default/:n", { path: { n: "a?b?" } }))).toBe(
+    //             "n: a?b?",
+    //         );
+    //         expect(await render(rs, href("GET /default/:n", {}))).toBe("n: x");
 
-    //             expect(await render(rs, href("GET /default/:n", { path: { n: "a?b?" } }))).toBe(
-    //                 "n: a?b?",
-    //             );
-    //             expect(await render(rs, href("GET /default/:n", {}))).toBe("n: x");
+    //         await expect(() =>
+    //             render(rs, href("GET /:n", { path: { n: "abcdef" } })),
+    //         ).rejects.toThrow("BadRequest");
 
-    //             await expect(() =>
-    //                 render(rs, href("GET /:n", { path: { n: "abcdef" } })),
-    //             ).rejects.toThrow("BadRequest");
-
-    //             expect(await render(rs, href("GET /:n/:m", { path: { n: "a" } }))).toBe("n: a");
-    //             expect(await render(rs, href("GET /:n/:m", { path: { n: "a", m: undefined } }))).toBe(
-    //                 "n: a",
-    //             );
-    //             expect(await render(rs, href("GET /:n/:m", { path: { n: "a", m: "b" } }))).toBe(
-    //                 "n: a m: b",
-    //             );
-    //         });
+    //         expect(await render(rs, href("GET /:n/:m", { path: { n: "a" } }))).toBe("n: a");
+    //         expect(await render(rs, href("GET /:n/:m", { path: { n: "a", m: undefined } }))).toBe(
+    //             "n: a",
+    //         );
+    //         expect(await render(rs, href("GET /:n/:m", { path: { n: "a", m: "b" } }))).toBe(
+    //             "n: a m: b",
+    //         );
+    //     });
 
     //         //     it("supports (nested) search params", async () => {
     //         //         const rs = routes({
@@ -835,7 +834,7 @@ describe("routing", () => {
     //         //         ),
     //         //     });
     //         // });
-    //     });
+    // });
 });
 
 async function render(

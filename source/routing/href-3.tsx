@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { type HttpMethod, httpMethods } from "@/http/http-context";
+import type { JsxElement } from "@/jsx/jsx-types";
 import {
     type GetRoutes,
+    type MethodDependantParamsConfig,
+    type ParamsConfig,
     routeParams,
     routes,
     type RoutesConfig,
@@ -104,15 +107,63 @@ function Q(props: { q: string }) {
 function xx() {
     const y = routes({
         "GET /": () => null,
-        "/search": routeParams({ search: z.object({ q: z.string() }) }, Q),
-        "/search2": routeParams({ search: z.object({ q: z.string() }) }, ({ q }) => <Q q={q} />),
+        "GET /depends": routeParams({}, () => <></>) as any as MethodDependantParamsConfig<{
+            GET: ParamsConfig<undefined, { x: string }, undefined, undefined, JsxElement>;
+            POST: ParamsConfig<undefined, undefined, { x: string }, undefined, JsxElement>;
+        }>,
+        "POST /depends": routeParams({}, () => <></>) as any as MethodDependantParamsConfig<{
+            GET: ParamsConfig<undefined, { x: string }, undefined, undefined, JsxElement>;
+            POST: ParamsConfig<undefined, undefined, { x: string }, undefined, JsxElement>;
+        }>,
+        "GET /search": routeParams({ search: z.object({ q: z.string() }) }, Q),
+        "GET /search2": routeParams({ search: z.object({ q: z.string() }) }, ({ q }) => (
+            <Q q={q} />
+        )),
         "/search3": routeParams({ search: z.object({ q: z.string() }) }, ({ q }) =>
             routes({ "GET /": <Q q={q} /> }),
+        ),
+        "/nested": routeParams({ search: z.object({ q: z.string() }) }, ({ q }) => {
+            const x = routeParams(
+                {
+                    // path: z.object({ id: z.boolean() }),
+                    search: z.object({ q2: z.string() }),
+                    body: z.object({ x: z.number() }),
+                },
+                (p) => routes({ "GET /": <>{p}</> }),
+            );
+            return x;
+        }),
+        "GET /nested2": routeParams({ search: z.object({ q: z.string() }) }, ({ q }) => {
+            const x = routeParams(
+                {
+                    //path: z.object({ id: z.boolean() }),
+                    search: z.object({ q2: z.string() }),
+                    body: z.object({ x: z.number() }),
+                },
+                (p) => <>{p}</>,
+            );
+            return x;
+        }),
+        "GET /nested3": routeParams(
+            { search: z.object({ q: z.string() }) },
+            ({ q }) =>
+                routeParams({}, (p) => <>{p}</>) as any as MethodDependantParamsConfig<{
+                    GET: ParamsConfig<undefined, { x: string }, undefined, undefined, JsxElement>;
+                    POST: ParamsConfig<undefined, undefined, { x: string }, undefined, JsxElement>;
+                }>,
+        ),
+        "POST /nested3": routeParams(
+            { search: z.object({ q: z.string() }) },
+            ({ q }) =>
+                routeParams({}, (p) => <>{p}</>) as any as MethodDependantParamsConfig<{
+                    GET: ParamsConfig<undefined, { x: string }, undefined, undefined, JsxElement>;
+                    POST: ParamsConfig<undefined, undefined, { x: string }, undefined, JsxElement>;
+                }>,
         ),
         "/search-async": routeParams({ search: z.object({ q: z.string() }) }, ({ q }) =>
             Promise.resolve(routes({ "GET /": <Q q={q} /> })),
         ),
-        "/body": routeParams({ body: z.object({ x: z.string() }) }, (s) => <>{s}</>),
+        "GET /body": routeParams({ body: z.object({ x: z.string() }) }, (s) => <>{s}</>),
         "/a": routes({
             "POST /b": () => null,
             "/:c": routeParams({ path: z.object({ c: z.string() }) }, (c) =>
@@ -143,6 +194,12 @@ function xx() {
 
     const toUrl = createHref<typeof y>();
     const a = toUrl("GET /");
+    const nes = toUrl("GET /nested", { search: { q: "", q2: "q" }, body: { x: 1 } });
+    const nes2 = toUrl("GET /nested2", { search: { q: "", q2: "q" }, body: { x: 1 } });
+    const nes23 = toUrl("GET /nested3", { search: { q: "", x: "q" } });
+    const pnes23 = toUrl("POST /nested3", { search: { q: "" }, body: { x: "q" } });
+    const d = toUrl("GET /depends", { search: { x: "x" } });
+    const d2 = toUrl("POST /depends", { body: { x: "x" } });
     const a2 = toUrl("GET /a/:c/d/e", { path: { c: "c" }, search: { d: "d" } });
     const b = toUrl("GET /a/:c/d/f/h/i", {
         path: { c: "c" },

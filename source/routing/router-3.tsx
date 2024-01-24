@@ -1,4 +1,4 @@
-import { z, type ZodEnum, type ZodType } from "zod";
+import { z, type ZodEnum, ZodError, type ZodType } from "zod";
 import { type HttpMethod, useHttpContext, useRequester } from "@/http/http-context";
 import { HttpError } from "@/http/http-error";
 import { ErrorBoundary } from "@/jsx/error-boundary";
@@ -49,22 +49,28 @@ export type RoutesDefinition<T extends Record<string, unknown>> = {
               ? Path extends `${string}:${string}`
                   ? "ERROR: Colons are not allowed in a path segment."
                   : T[Key] extends ParamsConfig<Record<string, unknown>, any, any, any, any>
-                    ? "ERROR: Invalid path parameter definition."
+                    ? "ERROR: Unexpected path parameter definition."
                     : T[Key] extends
                             | RoutesConfig<any>
                             | Promise<RoutesConfig<any>>
-                            | ParamsConfig<undefined, any, any, any, RoutesConfig<any>>
+                            | ParamsConfig<any, any, any, any, RoutesConfig<any>>
                       ? T[Key]
                       : "ERROR: Expected a routes definition or a route params definition with sub routes."
               : Key extends `${HttpMethod} /${infer Path}`
                 ? Path extends `${string}:${string}`
                     ? "ERROR: Colons are not allowed in a path segment."
                     : T[Key] extends ParamsConfig<Record<string, unknown>, any, any, any, any>
-                      ? "ERROR: Invalid path parameter definition."
+                      ? "ERROR: Unexpected path parameter definition."
                       : T[Key] extends
                               | JsxElement
                               | JsxComponent
-                              | ParamsConfig<undefined, any, any, any, JsxElement>
+                              | ParamsConfig<any, any, any, any, JsxElement>
+                              | MethodDependantParamsConfig<
+                                    Record<
+                                        HttpMethod,
+                                        ParamsConfig<undefined, any, any, any, JsxElement>
+                                    >
+                                >
                         ? T[Key]
                         : "ERROR: Expected a JSX element, a JSX component, or a route params definition with a nested JSX element."
                 : "ERROR: Properties must start with '{HttpMethod} /' or just '/'.";
@@ -83,7 +89,13 @@ export type ParamsConfig<
     SearchParams extends Record<string, unknown> | undefined,
     BodyParams extends Record<string, unknown> | undefined,
     HashParam extends string[] | undefined,
-    Nested extends JsxElement | RoutesConfig<any>,
+    Nested extends
+        | JsxElement
+        | ParamsConfig<any, any, any, any, any>
+        | RoutesConfig<any>
+        | MethodDependantParamsConfig<
+              Record<HttpMethod, ParamsConfig<any, any, any, any, JsxElement>>
+          >,
 > = {
     readonly [routingSymbol]: typeof paramsSymbol;
     readonly typeInfo?: [PathParam, SearchParams, BodyParams, HashParam];
@@ -91,38 +103,27 @@ export type ParamsConfig<
     readonly Component: RoutingComponent;
 };
 
-async function renderNested(
-    pathSegments: string[],
-    nested:
-        | JsxElement
-        | JsxComponent
-        | ParamsConfig<any, any, any, any, any>
-        | RoutesConfig<any>
-        | Promise<RoutesConfig<any>>,
-): Promise<JsxElement> {
-    if (nested === null || isJsxExpression(nested)) {
-        return nested;
-    }
-
-    const result = nested instanceof Promise ? await nested : nested;
-    if (result === null || isJsxExpression(result)) {
-        return result;
-    } else if (routingSymbol in result) {
-        return <result.Component pathSegments={pathSegments} />;
-    } else if (typeof result === "function") {
-        return result({});
-    } else {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const allMatched: never = result;
-        throw new Error("Invalid nested routes.");
-    }
-}
+export type MethodDependantParamsConfig<
+    Params extends Record<HttpMethod, ParamsConfig<any, any, any, any, JsxElement>>,
+> = Params;
 
 export function routeParams<
     Nested extends (
         mergedParams: MergeProperties<SearchParams, MergeProperties<BodyParams, PathParam>>,
         params: { path: PathParam; search: SearchParams; body: BodyParams },
-    ) => JsxElement | Promise<RoutesConfig<any>>,
+    ) =>
+        | JsxElement
+        | ParamsConfig<
+              undefined,
+              any, //Record<string, unknown> | undefined,
+              any, //Record<string, unknown> | undefined,
+              any, //string[] | undefined,
+              any
+          >
+        | Promise<RoutesConfig<any>>
+        | MethodDependantParamsConfig<
+              Record<HttpMethod, ParamsConfig<any, any, any, any, JsxElement>>
+          >,
     PathParam extends Record<string, unknown> | undefined = undefined,
     SearchParams extends Record<string, unknown> | undefined = undefined,
     BodyParams extends Record<string, unknown> | undefined = undefined,
@@ -135,30 +136,126 @@ export function routeParams<
         readonly hash?: HashParam;
     },
     nested: Nested,
-): ParamsConfig<PathParam, SearchParams, BodyParams, HashParam, Awaited<ReturnType<Nested>>> {
+): ReturnType<Nested> extends JsxElement
+    ? ParamsConfig<PathParam, SearchParams, BodyParams, HashParam, JsxElement>
+    : ReturnType<Nested> extends Promise<RoutesConfig<infer Nested2>>
+      ? ParamsConfig<PathParam, SearchParams, BodyParams, HashParam, RoutesConfig<Nested2>>
+      : ReturnType<Nested> extends ParamsConfig<
+              infer Path2,
+              infer Search2,
+              infer Body2,
+              infer Hash2,
+              infer Nested2
+          >
+        ? ParamsConfig<
+              MergeObjects<PathParam, Path2>,
+              MergeObjects<SearchParams, Search2>,
+              MergeObjects<BodyParams, Body2>,
+              MergeHashes<HashParam, Hash2>,
+              Nested2
+          >
+        : ReturnType<Nested> extends MethodDependantParamsConfig<infer ParamsMap>
+          ? MethodDependantParamsConfig<{
+                GET: ParamsMap["GET"] extends ParamsConfig<
+                    infer Path2,
+                    infer Search2,
+                    infer Body2,
+                    infer Hash2,
+                    infer Nested2 extends JsxElement
+                >
+                    ? ParamsConfig<
+                          MergeObjects<PathParam, Path2>,
+                          MergeObjects<SearchParams, Search2>,
+                          MergeObjects<BodyParams, Body2>,
+                          MergeHashes<HashParam, Hash2>,
+                          Nested2
+                      >
+                    : never;
+                POST: ParamsMap["POST"] extends ParamsConfig<
+                    infer Path2,
+                    infer Search2,
+                    infer Body2,
+                    infer Hash2,
+                    infer Nested2 extends JsxElement
+                >
+                    ? ParamsConfig<
+                          MergeObjects<PathParam, Path2>,
+                          MergeObjects<SearchParams, Search2>,
+                          MergeObjects<BodyParams, Body2>,
+                          MergeHashes<HashParam, Hash2>,
+                          Nested2
+                      >
+                    : never;
+            }>
+          : never {
     return {
         [routingSymbol]: paramsSymbol,
         Component: async ({ pathSegments }) => {
-            const hasPathParam = paramsSchemas.path !== undefined;
             const { searchParams, requestBody } = useHttpContext();
 
-            const path = hasPathParam
-                ? unpack(paramsSchemas.path, pathSegments[0] ?? undefined)!
-                : undefined;
-            const search = paramsSchemas.search
-                ? parseUrlSearchParams(paramsSchemas.search, searchParams)!
-                : undefined;
-            const body = paramsSchemas.body
-                ? parseUrlSearchParams(paramsSchemas.body, requestBody)!
-                : undefined;
+            try {
+                const path = paramsSchemas.path
+                    ? unpack(paramsSchemas.path, pathSegments[0])
+                    : undefined;
 
-            return renderNested(
-                pathSegments.slice(hasPathParam ? 1 : 0),
-                nested({ ...search, ...body, ...path } as any, { path, search, body } as any),
-            );
+                const search = paramsSchemas.search
+                    ? parseUrlSearchParams(paramsSchemas.search, searchParams)
+                    : undefined;
+
+                const body = paramsSchemas.body
+                    ? parseUrlSearchParams(paramsSchemas.body, requestBody)
+                    : undefined;
+
+                return renderNested(
+                    pathSegments.slice(paramsSchemas.path ? 1 : 0),
+                    nested({ ...search, ...body, ...path } as any, { path, search, body } as any),
+                );
+            } catch (e: unknown) {
+                if (e instanceof ZodError) {
+                    throw new HttpError("BadRequest", e);
+                } else {
+                    throw e;
+                }
+            }
         },
-    };
+    } satisfies ParamsConfig<any, any, any, any, any> as any;
 }
+
+const np1 = routeParams({ search: z.object({ id: z.string() }) }, (params) => routes({}));
+const np2 = routeParams({ search: z.object({ id: z.string() }) }, (params) =>
+    Promise.resolve(routes({ "GET /": <></> })),
+);
+const np3 = routeParams({ search: z.object({ id: z.string() }) }, (params) => <></>);
+const np4 = routeParams({ search: z.object({ id: z.string() }) }, (params) =>
+    Promise.resolve(<></>),
+);
+const np5 = routeParams({ search: z.object({ id: z.string() }) }, (params1, params1b) => {
+    const ex = routeParams({ body: z.object({ x: z.number() }) }, (params2, params2b) => <>{x}</>);
+    return ex;
+});
+
+const np7 = routeParams({ search: z.object({ id: z.string() }) }, (params1, params1b) => {
+    return routeParams({ search: z.object({ bla: z.boolean() }) }, (params2, params2b) => <>{x}</>);
+});
+
+const np27 = routeParams({ search: z.object({ id: z.string() }) }, (params1, params1b) => {
+    const X22 = routeParams({ search: z.object({ bla: z.boolean() }) }, (params2, params2b) => (
+        <>{x}</>
+    ));
+    return X22;
+});
+
+const np8 = routeParams(
+    { search: z.object({ id: z.string() }) },
+    (params1, params1b) =>
+        routeParams(
+            { search: z.object({ bla: z.boolean() }), body: z.object({ x: z.number() }) },
+            (params2, params2b) => <>{x}</>,
+        ) as any as MethodDependantParamsConfig<{
+            GET: ParamsConfig<undefined, { x: string }, undefined, undefined, JsxElement>;
+            POST: ParamsConfig<undefined, undefined, { x: string }, undefined, JsxElement>;
+        }>,
+);
 
 // const np1 = routeParams({}, (params) => routes({}));
 // const np2 = routeParams({}, (params) => Promise.resolve(routes({ "GET /": <></> })));
@@ -446,6 +543,38 @@ export async function Router<Routes extends RoutesConfig<any>>(props: RouterProp
     return <routes.Component pathSegments={requestPath} />;
 }
 
+async function renderNested(
+    pathSegments: string[],
+    nested:
+        | JsxElement
+        | JsxComponent
+        | ParamsConfig<any, any, any, any, any>
+        | MethodDependantParamsConfig<Record<HttpMethod, ParamsConfig<any, any, any, any, any>>>
+        | RoutesConfig<any>
+        | Promise<RoutesConfig<any>>,
+): Promise<JsxElement> {
+    if (nested === null || isJsxExpression(nested)) {
+        return nested;
+    }
+
+    const result = nested instanceof Promise ? await nested : nested;
+    if (result === null || isJsxExpression(result)) {
+        return result;
+    } else if (routingSymbol in result) {
+        return <result.Component pathSegments={pathSegments} />;
+    } else if (typeof result === "function") {
+        return result({});
+    } else {
+        // this type does not really exist at runtime
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const allMatched: MethodDependantParamsConfig<
+            Record<HttpMethod, ParamsConfig<any, any, any, any, any>>
+        > = result;
+
+        throw new Error("Invalid nested routes.");
+    }
+}
+
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 export interface RegisterRoutes {
     // provided by library user:
@@ -491,7 +620,9 @@ type CollectRoutesFromRoutesDefinition<
           `${Method} ${CombinePaths<Path, SubPath>}`,
           Routes[Key] extends ParamsConfig<any, any, any, any, JsxElement>
               ? CombineParams<Params, Routes[Key]>
-              : Params,
+              : Routes[Key] extends MethodDependantParamsConfig<infer ParamsMap>
+                ? CombineParams<Params, ParamsMap[Method]>
+                : Params,
       ]
     : Key extends `/:${infer ParamPath}`
       ? Routes[Key] extends ParamsConfig<
@@ -509,7 +640,7 @@ type CollectRoutesFromRoutesDefinition<
           : never
       : Key extends `/${infer SubPath}`
         ? Routes[Key] extends ParamsConfig<
-              undefined,
+              any,
               any,
               any,
               any,
@@ -548,21 +679,32 @@ type RouteParams<
 type CombineParams<
     Params extends RouteParams<any, any, any, any>,
     Config extends ParamsConfig<any, any, any, any, any>,
-> = Params extends RouteParams<
-    infer PathParams,
-    infer SearchParams,
-    infer BodyParams,
-    infer HashParam
->
-    ? Config extends ParamsConfig<infer Path, infer Search, infer Body, infer Hash, any>
+> = Params extends RouteParams<infer Path1, infer Search1, infer Body1, infer Hash1>
+    ? Config extends ParamsConfig<infer Path2, infer Search2, infer Body2, infer Hash2, any>
         ? RouteParams<
-              Path extends undefined ? PathParams : MergeProperties<PathParams, Path>,
-              Search extends undefined ? SearchParams : MergeProperties<SearchParams, Search>,
-              Body extends undefined ? BodyParams : MergeProperties<BodyParams, Body>,
-              Hash extends string[] ? [...HashParam, ...Hash] : HashParam
+              MergeObjects<Path1, Path2>,
+              MergeObjects<Search1, Search2>,
+              MergeObjects<Body1, Body2>,
+              MergeHashes<Hash1, Hash2>
           >
         : never
     : never;
+
+type MergeObjects<
+    T1 extends Record<string, any> | undefined,
+    T2 extends Record<string, any> | undefined,
+> = T2 extends undefined ? T1 : MergeProperties<T1, T2>;
+
+type MergeHashes<
+    Hash1 extends string[] | undefined,
+    Hash2 extends string[] | undefined,
+> = Hash1 extends string[]
+    ? Hash2 extends string[]
+        ? [...Hash1, ...Hash2]
+        : Hash1
+    : Hash2 extends string[]
+      ? Hash2
+      : [];
 
 type MakeEmptyPropertiesOptional<T extends Record<string, any>> = {
     [K in keyof T as keyof RemoveUnnecessaryProperties<T[K]> extends never
@@ -617,9 +759,9 @@ const x = routes({
     // //         routes({ "GET /": <></> }),
     // //     ),
     // // }),
-    // "/e": routes({
-    //     "GET /:e": routeParams({ path: z.object({ e: z.string() }) }, (params) => <></>),
-    // }),
+    "/e": routes({
+        "GET /:e": routeParams({ path: z.object({ e: z.string() }) }, (params) => <></>),
+    }),
     // "/h": routeParams({ hash: ["a", "b", "c"] }, (params) => routes({ "GET /": <></> })),
     // "GET /1": routeParams({ search: z.object({ id: zLocalDate() }) }, (params) =>
     //     routeParams({ body: z.object({ x: z.boolean() }) }, (params) =>
