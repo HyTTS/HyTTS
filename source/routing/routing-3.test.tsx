@@ -119,7 +119,7 @@ describe("routing", () => {
 
         it("supports routes that redirect", async () => {
             const rs = routes({
-                "GET /redirect": () => <Redirect href={href("GET /target")} />,
+                "GET /redirect": () => <Redirect<typeof rs> href="" />,
                 "GET /target": <></>,
                 "POST /redirect": () => (
                     <Redirect

@@ -4,7 +4,8 @@ import { HttpError } from "@/http/http-error";
 import { type ContextProviderProps, createContext, useContext } from "@/jsx/context";
 import { CspNonceProvider } from "@/jsx/csp-nonce";
 import type { JsxElement, PropsWithChildren } from "@/jsx/jsx-types";
-import type { Href } from "@/routing/href-3";
+import type { HrefOptions } from "@/routing/href-3";
+import type { GetRoutes, RoutesConfig, RoutesInfo } from "@/routing/router-3";
 import { parseUrlSearchParams } from "@/serialization/url-params";
 
 /** The list of HTTP verbs supported by HyTTS. */
@@ -90,16 +91,22 @@ export function HttpStatusCode({ code, children }: HttpStatusCodeProps): JsxElem
     return <>{children}</>;
 }
 
-export type RedirectProps = PropsWithChildren<{
-    readonly href: Href<"GET">;
-}>;
+export type RedirectProps<
+    Routes extends RoutesConfig<any> | Promise<RoutesConfig<any>> = GetRoutes,
+    Info extends Record<string, any> = RoutesInfo<Awaited<Routes>>,
+    Path extends keyof Info & `GET ${string}` = any,
+> = PropsWithChildren<HrefOptions<Routes, Info, Path>>;
 
 /**
  * Sets the URL the browser should be redirected to using a 302 HTTP status code. All rendered JSX
  * components are discarded. You cannot redirect more than once in the same HTTP response.
  */
-export function Redirect({ href, children }: RedirectProps): JsxElement {
-    // SECURITY: Do not allow redirects outside of our app, when someone fakes the `RouteUrl`, see:
+export function Redirect<
+    Routes extends RoutesConfig<any> | Promise<RoutesConfig<any>> = GetRoutes,
+    Info extends Record<string, any> = RoutesInfo<Awaited<Routes>>,
+    Path extends keyof Info & `GET ${string}` = any,
+>({ href, children }: RedirectProps<Routes, Info, Path>): JsxElement {
+    // SECURITY: Do not allow redirects outside of our app, when someone fakes the given href, see:
     // https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
     if (!isRelativeUrl(href.url)) {
         throw new Error("Redirecting to absolute URLs is unsupported for security reasons.");
@@ -107,11 +114,6 @@ export function Redirect({ href, children }: RedirectProps): JsxElement {
 
     useHttpContext().redirect(href.url);
     return <>{children}</>;
-
-    function isRelativeUrl(url: string) {
-        const origin = "https://example.com";
-        return new URL(url, origin).origin === origin;
-    }
 }
 
 export type AbsoluteRedirectProps = PropsWithChildren<{
@@ -129,6 +131,10 @@ export type AbsoluteRedirectProps = PropsWithChildren<{
  * https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
  */
 export function AbsoluteRedirect({ href, children }: AbsoluteRedirectProps): JsxElement {
+    if (isRelativeUrl(href)) {
+        throw new Error("Expected an absolute URL, but got a relative URL.");
+    }
+
     useHttpContext().redirect(href);
     return <>{children}</>;
 }
@@ -162,4 +168,9 @@ export function useUrlSearchParams<
 /** Retrieves the value of the current request's HTTP header called `name`. */
 export function useRequestHeader(name: string) {
     return useHttpContext().getHeader(name);
+}
+
+function isRelativeUrl(url: string) {
+    const origin = "https://example.com";
+    return new URL(url, origin).origin === origin;
 }
