@@ -117,7 +117,7 @@ export {
     wrapRoutes,
 } from "@/routing/router-3";
 
-export { type Href, createHref, isHref } from "@/routing/href-3";
+export { type Href, type HrefOptions, createHref, isHref } from "@/routing/href-3";
 
 export {
     type Form,

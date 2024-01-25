@@ -1,9 +1,9 @@
 import { z } from "zod";
 import { type HttpMethod, httpMethods } from "@/http/http-context";
-import type { JsxElement } from "@/jsx/jsx-types";
+import type { JsxComponent, JsxElement } from "@/jsx/jsx-types";
 import {
+    type FormParamsConfig,
     type GetRoutes,
-    type MethodDependantParamsConfig,
     type ParamsConfig,
     routeParams,
     routes,
@@ -14,19 +14,11 @@ import {
 import { toUrlSearchParams } from "@/serialization/url-params";
 import type { Flatten } from "@/types";
 
-const hrefSymbol = Symbol();
-
-type ToUrlParams<Params> = keyof RemoveUnnecessaryProperties<Params> extends never
-    ? []
-    : [params: Flatten<RemoveUnnecessaryProperties<Params>>];
-
-type RemoveUnnecessaryProperties<T> = {
-    [K in keyof T as T[K] extends infer U | undefined
-        ? keyof U extends never
-            ? never
-            : K
-        : K]: T[K];
-};
+export type HrefOptions<
+    Routes extends RoutesConfig<any> | Promise<RoutesConfig<any>> = GetRoutes,
+    Info extends Record<string, any> = RoutesInfo<Awaited<Routes>>,
+    Path extends string = "",
+> = { readonly href: Path } & Flatten<RemoveUnnecessaryProperties<Info[Path]["params"]>>;
 
 /**
  * Represents an hypertext reference to another route, consisting of the referenced route's URL, the
@@ -98,99 +90,111 @@ export function createHref<
     };
 }
 
+const hrefSymbol = Symbol();
+
+type ToUrlParams<Params> = keyof RemoveUnnecessaryProperties<Params> extends never
+    ? []
+    : [params: Flatten<RemoveUnnecessaryProperties<Params>>];
+
+type RemoveUnnecessaryProperties<T> = {
+    [K in keyof T as T[K] extends infer U | undefined
+        ? keyof U extends never
+            ? never
+            : K
+        : K]: T[K];
+};
+
 // export const href = createHref();
 
 function Q(props: { q: string }) {
     return <></>;
 }
 
-function xx() {
-    const y = routes({
-        "GET /": () => null,
-        "GET /depends": routeParams({}, () => <></>) as any as MethodDependantParamsConfig<{
-            GET: ParamsConfig<undefined, { x: string }, undefined, undefined, JsxElement>;
-            POST: ParamsConfig<undefined, undefined, { x: string }, undefined, JsxElement>;
-        }>,
-        "POST /depends": routeParams({}, () => <></>) as any as MethodDependantParamsConfig<{
-            GET: ParamsConfig<undefined, { x: string }, undefined, undefined, JsxElement>;
-            POST: ParamsConfig<undefined, undefined, { x: string }, undefined, JsxElement>;
-        }>,
-        "GET /search": routeParams({ search: z.object({ q: z.string() }) }, Q),
-        "GET /search2": routeParams({ search: z.object({ q: z.string() }) }, ({ q }) => (
-            <Q q={q} />
-        )),
-        "/search3": routeParams({ search: z.object({ q: z.string() }) }, ({ q }) =>
-            routes({ "GET /": <Q q={q} /> }),
+const y = routes({
+    "GET /": () => null,
+    "GET /depends": routeParams({}, () => <></>) as any as FormParamsConfig<{
+        GET: ParamsConfig<undefined, { x: string }, undefined, undefined, JsxElement>;
+        POST: ParamsConfig<undefined, undefined, { x: string }, undefined, JsxElement>;
+    }>,
+    "POST /depends": routeParams({}, () => <></>) as any as FormParamsConfig<{
+        GET: ParamsConfig<undefined, { x: string }, undefined, undefined, JsxElement>;
+        POST: ParamsConfig<undefined, undefined, { x: string }, undefined, JsxElement>;
+    }>,
+    "GET /search": routeParams({ search: z.object({ q: z.string() }) }, Q),
+    "GET /search2": routeParams({ search: z.object({ q: z.string() }) }, ({ q }) => <Q q={q} />),
+    "/search3": routeParams({ search: z.object({ q: z.string() }) }, ({ q }) =>
+        routes({ "GET /": <Q q={q} /> }),
+    ),
+    "/nested": routeParams({ search: z.object({ q: z.string() }) }, ({ q }) => {
+        const x = routeParams(
+            {
+                // path: z.object({ id: z.boolean() }),
+                search: z.object({ q2: z.string() }),
+                body: z.object({ x: z.number() }),
+            },
+            (p) => routes({ "GET /": <>{p}</> }),
+        );
+        return x;
+    }),
+    "GET /nested2": routeParams({ search: z.object({ q: z.string() }) }, ({ q }) => {
+        const x = routeParams(
+            {
+                //path: z.object({ id: z.boolean() }),
+                search: z.object({ q2: z.string() }),
+                body: z.object({ x: z.number() }),
+            },
+            (p) => <>{p}</>,
+        );
+        return x;
+    }),
+    "GET /nested3": routeParams(
+        { search: z.object({ q: z.string() }) },
+        ({ q }) =>
+            routeParams({}, (p) => <>{p}</>) as any as FormParamsConfig<{
+                GET: ParamsConfig<undefined, { x: string }, undefined, undefined, JsxElement>;
+                POST: ParamsConfig<undefined, undefined, { x: string }, undefined, JsxElement>;
+            }>,
+    ),
+    "POST /nested3": routeParams(
+        { search: z.object({ q: z.string() }) },
+        ({ q }) =>
+            routeParams({}, (p) => <>{p}</>) as any as FormParamsConfig<{
+                GET: ParamsConfig<undefined, { x: string }, undefined, undefined, JsxElement>;
+                POST: ParamsConfig<undefined, undefined, { x: string }, undefined, JsxElement>;
+            }>,
+    ),
+    "/search-async": routeParams({ search: z.object({ q: z.string() }) }, ({ q }) =>
+        Promise.resolve(routes({ "GET /": <Q q={q} /> })),
+    ),
+    "GET /body": routeParams({ body: z.object({ x: z.string() }) }, (s) => <>{s}</>),
+    "/a": routes({
+        "POST /b": () => null,
+        "/:c": routeParams({ path: z.object({ c: z.string() }) }, (c) =>
+            routes({
+                "GET /": () => null,
+                "GET /d": () => null,
+                "/d": routeParams({ search: z.object({ d: z.string() }) }, ({ d }) =>
+                    routes({
+                        "GET /e": () => null,
+                        "/f": routeParams({ body: z.object({ f: z.string() }) }, ({ f }) =>
+                            routes({
+                                "GET /g": () => null,
+                                "/h": routeParams({ hash: ["a", "b", "c"] }, (s) =>
+                                    routes({
+                                        "GET /i": () => null,
+                                    }),
+                                ),
+                            }),
+                        ),
+                    }),
+                ),
+            }),
         ),
-        "/nested": routeParams({ search: z.object({ q: z.string() }) }, ({ q }) => {
-            const x = routeParams(
-                {
-                    // path: z.object({ id: z.boolean() }),
-                    search: z.object({ q2: z.string() }),
-                    body: z.object({ x: z.number() }),
-                },
-                (p) => routes({ "GET /": <>{p}</> }),
-            );
-            return x;
-        }),
-        "GET /nested2": routeParams({ search: z.object({ q: z.string() }) }, ({ q }) => {
-            const x = routeParams(
-                {
-                    //path: z.object({ id: z.boolean() }),
-                    search: z.object({ q2: z.string() }),
-                    body: z.object({ x: z.number() }),
-                },
-                (p) => <>{p}</>,
-            );
-            return x;
-        }),
-        "GET /nested3": routeParams(
-            { search: z.object({ q: z.string() }) },
-            ({ q }) =>
-                routeParams({}, (p) => <>{p}</>) as any as MethodDependantParamsConfig<{
-                    GET: ParamsConfig<undefined, { x: string }, undefined, undefined, JsxElement>;
-                    POST: ParamsConfig<undefined, undefined, { x: string }, undefined, JsxElement>;
-                }>,
-        ),
-        "POST /nested3": routeParams(
-            { search: z.object({ q: z.string() }) },
-            ({ q }) =>
-                routeParams({}, (p) => <>{p}</>) as any as MethodDependantParamsConfig<{
-                    GET: ParamsConfig<undefined, { x: string }, undefined, undefined, JsxElement>;
-                    POST: ParamsConfig<undefined, undefined, { x: string }, undefined, JsxElement>;
-                }>,
-        ),
-        "/search-async": routeParams({ search: z.object({ q: z.string() }) }, ({ q }) =>
-            Promise.resolve(routes({ "GET /": <Q q={q} /> })),
-        ),
-        "GET /body": routeParams({ body: z.object({ x: z.string() }) }, (s) => <>{s}</>),
-        "/a": routes({
-            "POST /b": () => null,
-            "/:c": routeParams({ path: z.object({ c: z.string() }) }, (c) =>
-                routes({
-                    "GET /": () => null,
-                    "GET /d": () => null,
-                    "/d": routeParams({ search: z.object({ d: z.string() }) }, ({ d }) =>
-                        routes({
-                            "GET /e": () => null,
-                            "/f": routeParams({ body: z.object({ f: z.string() }) }, ({ f }) =>
-                                routes({
-                                    "GET /g": () => null,
-                                    "/h": routeParams({ hash: ["a", "b", "c"] }, (s) =>
-                                        routes({
-                                            "GET /i": () => null,
-                                        }),
-                                    ),
-                                }),
-                            ),
-                        }),
-                    ),
-                }),
-            ),
-        }),
-    });
+    }),
+});
 
-    type TT = RoutesInfo<Awaited<typeof y>>;
+function xx() {
+    type TT = RoutesInfo;
 
     const toUrl = createHref<typeof y>();
     const a = toUrl("GET /");
@@ -200,19 +204,74 @@ function xx() {
     const pnes23 = toUrl("POST /nested3", { search: { q: "" }, body: { x: "q" } });
     const d = toUrl("GET /depends", { search: { x: "x" } });
     const d2 = toUrl("POST /depends", { body: { x: "x" } });
-    const a2 = toUrl("GET /a/:c/d/e", { path: { c: "c" }, search: { d: "d" } });
+    const a2 = toUrl("GET /a/:c/d/e", { params: { c: "c" }, search: { d: "d" } });
     const b = toUrl("GET /a/:c/d/f/h/i", {
-        path: { c: "c" },
+        params: { c: "c" },
         search: { d: "d" },
         body: { f: "f" },
         hash: "a",
     });
     const yz = toUrl("GET /a/:c/d/f/h/i", {
-        path: { c: "1" },
+        params: { c: "1" },
         search: { d: "" },
         body: { f: "f" },
         hash: "b",
     });
+
+    // type HrefOptions2<
+    //     Routes extends RoutesConfig<any> | Promise<RoutesConfig<any>> = GetRoutes,
+    //     Info extends Record<string, any> = RoutesInfo<Awaited<Routes>>,
+    //     Path extends keyof Info & string = "",
+    // > = { readonly href: Path } & Flatten<RemoveUnnecessaryProperties<Info[Path]["params"]>>;
+
+    type Comp<Routes extends RoutesConfig<any> | Promise<RoutesConfig<any>> = GetRoutes> = {
+        // eslint-disable-next-line @typescript-eslint/prefer-function-type
+        <
+            Info extends Record<string, any> = RoutesInfo<Awaited<Routes>>,
+            Path extends keyof Info & string = "",
+        >(
+            p: HrefOptions<Routes, Info, Path>,
+        ): JsxElement;
+    };
+
+    function X<
+        Routes extends RoutesConfig<any> | Promise<RoutesConfig<any>> = GetRoutes,
+        Info extends Record<string, any> = RoutesInfo<Awaited<Routes>>,
+        Path extends keyof Info & string = string,
+    >(p: HrefOptions<Routes, Info, Path>) {
+        return null!;
+    }
+
+    // const C: Comp = (p) => null;
+
+    type Q = HrefOptions;
+
+    // type LinkComponent = {
+    //     // eslint-disable-next-line @typescript-eslint/prefer-function-type
+    //     <
+    //         Routes extends RoutesConfig<any> | Promise<RoutesConfig<any>> = GetRoutes,
+    //         Info extends Record<string, any> = RoutesInfo<Awaited<Routes>>,
+    //         Path extends keyof Info & string = "",
+    //     >(
+    //         p: NavigationProps<Routes, Info, Path>,
+    //     ): JsxElement;
+    // };
+
+    // const Y: LinkComponent = (p) => null;
+
+    // <C<typeof y>></C>;
+
+    X<typeof y>({ href: "" });
+
+    <X<typeof y, RoutesInfo, "GET /a/:c/d/f/h/i">
+        href="GET /a/:c/d/f/h/i"
+        params={{ c: "1" }}
+        body={{ f: "1" }}
+        search={{ d: "" }}
+        hash="a"
+    ></X>;
+
+    // <Y path="GET /"></Y>;
 
     // type X4 = RoutesInfo["GET /a/:c/d/e"];
     // type qqqq = RoutesInfo["GET /a/:c"]["params"];
@@ -223,7 +282,7 @@ function xx() {
     // type X331 = ToUrlParams<RoutesInfo["GET /a/:c"]["params"]>;
     // type X3231 = ToUrlParams<RoutesInfo["GET /a/:c/d/f/g"]["params"]>;
     // const tu = createHref();
-    // tu("GET /a/:c/d/e", { path: { c: "c" }, search: { d: "d" } });
+    const zzzz = toUrl("GET /a/:c/d/e", { params: { c: "c" }, search: { d: "d" } });
     // tu("GET /");
     // tu("GET /a/:c", {});
     // tu("GET /a/:c", { path: { c: "c" } });

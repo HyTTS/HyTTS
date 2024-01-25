@@ -65,7 +65,7 @@ export type RoutesDefinition<T extends Record<string, unknown>> = {
                               | JsxElement
                               | JsxComponent
                               | ParamsConfig<any, any, any, any, JsxElement>
-                              | MethodDependantParamsConfig<
+                              | FormParamsConfig<
                                     Record<
                                         HttpMethod,
                                         ParamsConfig<undefined, any, any, any, JsxElement>
@@ -93,9 +93,7 @@ export type ParamsConfig<
         | JsxElement
         | ParamsConfig<any, any, any, any, any>
         | RoutesConfig<any>
-        | MethodDependantParamsConfig<
-              Record<HttpMethod, ParamsConfig<any, any, any, any, JsxElement>>
-          >,
+        | FormParamsConfig<Record<HttpMethod, ParamsConfig<any, any, any, any, JsxElement>>>,
 > = {
     readonly [routingSymbol]: typeof paramsSymbol;
     readonly typeInfo?: [PathParam, SearchParams, BodyParams, HashParam];
@@ -103,9 +101,17 @@ export type ParamsConfig<
     readonly Component: RoutingComponent;
 };
 
-export type MethodDependantParamsConfig<
+/**
+ * Places the form's values either in the search params for GET requests or in the body for all
+ * other kinds of requests.
+ */
+export type FormParamsConfig<
     Params extends Record<HttpMethod, ParamsConfig<any, any, any, any, JsxElement>>,
 > = Params;
+
+// TODO IDEA: MAKE THE PARAMS GENERALLY A FUNCTION OF THE HTTP METHOD
+
+// TODO IDEA: INSTEAD OF 4 GENERIC PARAMS, HAVE JUST ONE THAT REPRESENTS THEM ALL TO MAKE THE CODE SIMPLER
 
 export function routeParams<
     Nested extends (
@@ -113,17 +119,9 @@ export function routeParams<
         params: { path: PathParam; search: SearchParams; body: BodyParams },
     ) =>
         | JsxElement
-        | ParamsConfig<
-              undefined,
-              any, //Record<string, unknown> | undefined,
-              any, //Record<string, unknown> | undefined,
-              any, //string[] | undefined,
-              any
-          >
+        | ParamsConfig<undefined, any, any, any, any>
         | Promise<RoutesConfig<any>>
-        | MethodDependantParamsConfig<
-              Record<HttpMethod, ParamsConfig<any, any, any, any, JsxElement>>
-          >,
+        | FormParamsConfig<Record<HttpMethod, ParamsConfig<any, any, any, any, JsxElement>>>,
     PathParam extends Record<string, unknown> | undefined = undefined,
     SearchParams extends Record<string, unknown> | undefined = undefined,
     BodyParams extends Record<string, unknown> | undefined = undefined,
@@ -154,8 +152,8 @@ export function routeParams<
               MergeHashes<HashParam, Hash2>,
               Nested2
           >
-        : ReturnType<Nested> extends MethodDependantParamsConfig<infer ParamsMap>
-          ? MethodDependantParamsConfig<{
+        : ReturnType<Nested> extends FormParamsConfig<infer ParamsMap>
+          ? FormParamsConfig<{
                 GET: ParamsMap["GET"] extends ParamsConfig<
                     infer Path2,
                     infer Search2,
@@ -251,7 +249,7 @@ const np8 = routeParams(
         routeParams(
             { search: z.object({ bla: z.boolean() }), body: z.object({ x: z.number() }) },
             (params2, params2b) => <>{x}</>,
-        ) as any as MethodDependantParamsConfig<{
+        ) as any as FormParamsConfig<{
             GET: ParamsConfig<undefined, { x: string }, undefined, undefined, JsxElement>;
             POST: ParamsConfig<undefined, undefined, { x: string }, undefined, JsxElement>;
         }>,
@@ -384,7 +382,8 @@ export async function routes<Routes extends Record<string, unknown> & RoutesDefi
 
             console.log("==============", pathSegments);
 
-            // If we're at the last path segment, there must be a matching GET or POST route.
+            // Only check GET and POST routes if we're at the last path segment, otherwise we can't
+            // match such routes yet because there would be unmatched, left-over path segments.
             if (pathSegments.length <= 1) {
                 const key = `${method} /${pathSegments[0] ?? ""}`;
                 const match = lookup[key];
@@ -485,9 +484,8 @@ export function wrapRoutes<Def extends Record<string, unknown> & RoutesDefinitio
     };
 }
 
-type CombinedRoutes<Def extends Record<string, unknown>> = Def extends RoutesDefinition<Def>
-    ? RoutesConfig<Def>
-    : never;
+type CombinedRoutes<Def extends Record<string, unknown>> =
+    Def extends RoutesDefinition<Def> ? RoutesConfig<Def> : never;
 
 /**
  * Combines two route configurations together, merging their defined routes. The resulting type
@@ -549,7 +547,7 @@ async function renderNested(
         | JsxElement
         | JsxComponent
         | ParamsConfig<any, any, any, any, any>
-        | MethodDependantParamsConfig<Record<HttpMethod, ParamsConfig<any, any, any, any, any>>>
+        | FormParamsConfig<Record<HttpMethod, ParamsConfig<any, any, any, any, any>>>
         | RoutesConfig<any>
         | Promise<RoutesConfig<any>>,
 ): Promise<JsxElement> {
@@ -565,9 +563,9 @@ async function renderNested(
     } else if (typeof result === "function") {
         return result({});
     } else {
-        // this type does not really exist at runtime
+        // this left-over type does not exist at runtime
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const allMatched: MethodDependantParamsConfig<
+        const allMatched: FormParamsConfig<
             Record<HttpMethod, ParamsConfig<any, any, any, any, any>>
         > = result;
 
@@ -582,7 +580,7 @@ export interface RegisterRoutes {
 }
 
 export type GetRoutes = RegisterRoutes extends {
-    routes: infer T extends Promise<RoutesConfig<any>>;
+    routes: infer T extends RoutesConfig<any> | Promise<RoutesConfig<any>>;
 }
     ? Awaited<T>
     : RoutesConfig<{}>;
@@ -605,9 +603,10 @@ type CollectRoutes<
     Routes extends RoutesConfig<any>,
     Path extends string,
     Params extends RouteParams<any, any, any, any>,
-> = Routes extends RoutesConfig<infer Def>
-    ? CollectRoutesFromRoutesDefinition<Def, keyof Def, Path, Params>
-    : never;
+> =
+    Routes extends RoutesConfig<infer Def>
+        ? CollectRoutesFromRoutesDefinition<Def, keyof Def, Path, Params>
+        : never;
 
 type CollectRoutesFromRoutesDefinition<
     Routes extends RoutesDefinition<Routes>,
@@ -620,7 +619,7 @@ type CollectRoutesFromRoutesDefinition<
           `${Method} ${CombinePaths<Path, SubPath>}`,
           Routes[Key] extends ParamsConfig<any, any, any, any, JsxElement>
               ? CombineParams<Params, Routes[Key]>
-              : Routes[Key] extends MethodDependantParamsConfig<infer ParamsMap>
+              : Routes[Key] extends FormParamsConfig<infer ParamsMap>
                 ? CombineParams<Params, ParamsMap[Method]>
                 : Params,
       ]
@@ -670,7 +669,7 @@ type RouteParams<
     BodyParams extends Record<string, any>,
     HashParam extends string[],
 > = {
-    path: PathParams;
+    params: PathParams;
     search: SearchParams;
     body: BodyParams;
     hash: HashParam;
@@ -679,21 +678,33 @@ type RouteParams<
 type CombineParams<
     Params extends RouteParams<any, any, any, any>,
     Config extends ParamsConfig<any, any, any, any, any>,
-> = Params extends RouteParams<infer Path1, infer Search1, infer Body1, infer Hash1>
-    ? Config extends ParamsConfig<infer Path2, infer Search2, infer Body2, infer Hash2, any>
-        ? RouteParams<
-              MergeObjects<Path1, Path2>,
-              MergeObjects<Search1, Search2>,
-              MergeObjects<Body1, Body2>,
-              MergeHashes<Hash1, Hash2>
-          >
-        : never
-    : never;
+> =
+    Params extends RouteParams<infer Path1, infer Search1, infer Body1, infer Hash1>
+        ? Config extends ParamsConfig<infer Path2, infer Search2, infer Body2, infer Hash2, any>
+            ? RouteParams<
+                  MergeObjects<Path1, Path2>,
+                  MergeObjects<Search1, Search2>,
+                  MergeObjects<Body1, Body2>,
+                  MergeHashes<Hash1, Hash2>
+              >
+            : never
+        : never;
 
 type MergeObjects<
     T1 extends Record<string, any> | undefined,
     T2 extends Record<string, any> | undefined,
 > = T2 extends undefined ? T1 : MergeProperties<T1, T2>;
+
+type MergeProperties<
+    T1 extends Record<string, unknown> | undefined,
+    T2 extends Record<string, unknown> | undefined,
+> = Flatten<{
+    [K in (keyof T1 | keyof T2) & string]: K extends keyof T2
+        ? T2[K]
+        : K extends keyof T1
+          ? T1[K]
+          : never;
+}>;
 
 type MergeHashes<
     Hash1 extends string[] | undefined,
@@ -723,17 +734,6 @@ type MakeEmptyPropertiesOptional<T extends Record<string, any>> = {
 type RemoveUnnecessaryProperties<T> = {
     [K in keyof T as keyof T[K] extends never ? never : K]: T[K];
 };
-
-type MergeProperties<
-    T1 extends Record<string, unknown> | undefined,
-    T2 extends Record<string, unknown> | undefined,
-> = Flatten<{
-    [K in (keyof T1 | keyof T2) & string]: K extends keyof T2
-        ? T2[K]
-        : K extends keyof T1
-          ? T1[K]
-          : never;
-}>;
 
 const x = routes({
     // "GET /": <></>,

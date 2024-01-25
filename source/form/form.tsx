@@ -6,11 +6,7 @@ import { HttpStatusCode, useHttpContext, useRequestHeader } from "@/http/http-co
 import type { JSX, JsxComponent, JsxElement } from "@/jsx/jsx-types";
 import type { FormValues, Href } from "@/routing/href";
 import type { FormElement } from "@/routing/router";
-import {
-    type MethodDependantParamsConfig,
-    type ParamsConfig,
-    routeParams,
-} from "@/routing/router-3";
+import { type FormParamsConfig, type ParamsConfig, routeParams } from "@/routing/router-3";
 import { toPartialSchema, type ToPartialSchema } from "@/serialization/to-partial-schema";
 import { parseUrlSearchParams } from "@/serialization/url-params";
 
@@ -180,7 +176,7 @@ export function createForm<FormStateSchema extends SomeFormSchema>(
         );
     };
 
-    type FormParamsConfig = MethodDependantParamsConfig<{
+    type FormParams = FormParamsConfig<{
         GET: ParamsConfig<undefined, InputFormState, undefined, undefined, JsxElement>;
         POST: ParamsConfig<undefined, undefined, InputFormState, undefined, JsxElement>;
     }>;
@@ -193,7 +189,7 @@ export function createForm<FormStateSchema extends SomeFormSchema>(
 
     Form.update = (
         updateState: (state: PartialFormState) => PartialFormState | Promise<PartialFormState>,
-    ): FormParamsConfig =>
+    ): FormParams =>
         (async () => {
             const schema = await getSchema();
             const updatedState = await updateState(getPartialFormState(schema));
@@ -212,7 +208,7 @@ export function createForm<FormStateSchema extends SomeFormSchema>(
          * some database, sending an e-mail, etc.
          */
         action: JsxComponent<{ formState: z.output<FormStateSchema> }>,
-    ): FormParamsConfig =>
+    ): FormParams =>
         (async () => {
             const schema = await getSchema();
             const partialFormState = getPartialFormState(schema);

@@ -50,7 +50,7 @@
 //                 ),
 //             }),
 //             async (href, fetch) => {
-//                 const statusCodeResponse = await fetch(href("GET /statusCode"));
+//                      const statusCodeResponse = await fetch(href("GET /statusCode"));
 //                 expect(await statusCodeResponse.text()).toBe("status: 201");
 //                 expect(statusCodeResponse.status).toBe(201);
 
