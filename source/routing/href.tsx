@@ -101,9 +101,10 @@ type CollectRoutesFromRouter<
     Routes extends RoutesComponent<any>,
     Path extends string,
     PathParams extends Record<string, any>,
-> = Routes extends RoutesComponent<infer Def>
-    ? CollectRoutesFromRouterDefinition<Def, keyof Def, Path, PathParams>
-    : never;
+> =
+    Routes extends RoutesComponent<infer Def>
+        ? CollectRoutesFromRouterDefinition<Def, keyof Def, Path, PathParams>
+        : never;
 
 type CollectRoutesFromRouterDefinition<
     Routes extends RoutesDefinition<Routes>,
