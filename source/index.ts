@@ -14,7 +14,7 @@ export {
 export {
     type Context,
     type ContextOptions,
-    type ContextProviderProps,
+    type ContextProps,
     createContext,
     useContext,
     useContextOrDefault,

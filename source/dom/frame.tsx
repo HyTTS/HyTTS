@@ -35,11 +35,11 @@ export function createFrame(frameId: string): Frame {
     const frame = (props: FrameProps) => {
         return (
             <hy-frame id={frameId} class={props.class}>
-                <frameContext.Provider value={frame}>
+                <FrameContext value={frame}>
                     <UniqueNameProvider namespace={frameId}>
                         <BrowserScriptRenderer>{props.children}</BrowserScriptRenderer>
                     </UniqueNameProvider>
-                </frameContext.Provider>
+                </FrameContext>
             </hy-frame>
         );
     };
@@ -50,7 +50,7 @@ export function createFrame(frameId: string): Frame {
 
 /** Provides access to the metadata of the caller's nearest ancestor frame. */
 export function useFrameMetadata() {
-    return useContext(frameContext);
+    return useContext(FrameContext);
 }
 
-const frameContext = createContext<FrameMetadata>({ name: "frame metadata" });
+const FrameContext = createContext<FrameMetadata>({ name: "frame metadata" });

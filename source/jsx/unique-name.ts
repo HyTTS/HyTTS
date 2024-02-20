@@ -1,7 +1,7 @@
 import { createContext, useContext, useContextOrDefault } from "@/jsx/context";
 import type { PropsWithChildren } from "@/jsx/jsx-types";
 
-const uniqueNameContext = createContext<{ readonly namespace: string; index: number }>({
+const UniqueNameContext = createContext<{ readonly namespace: string; index: number }>({
     name: "unique name provider",
 });
 
@@ -16,10 +16,10 @@ export function UniqueNameProvider(props: UniqueNameProviderProps) {
         throw new Error("You cannot use '$' as part of a namespace.");
     }
 
-    const context = useContextOrDefault(uniqueNameContext, false);
+    const context = useContextOrDefault(UniqueNameContext, false);
     const namespace = context ? `${useUniqueName()}$${props.namespace}` : `$${props.namespace}`;
 
-    return uniqueNameContext.Provider({
+    return UniqueNameContext({
         value: { namespace, index: 0 },
         children: props.children,
     });
@@ -38,6 +38,6 @@ export function UniqueNameProvider(props: UniqueNameProviderProps) {
  *   multiple requests.
  */
 export function useUniqueName() {
-    const context = useContext(uniqueNameContext);
+    const context = useContext(UniqueNameContext);
     return `${context.namespace}$${context.index++}`;
 }

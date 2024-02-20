@@ -47,7 +47,7 @@ export function BrowserScriptRenderer(props: PropsWithChildren) {
     // after all children's output.
     const scripts = new Set<BrowserScript | BrowserFunc<any>>();
 
-    return scriptContext.Provider({
+    return ScriptContext({
         value: (script) => scripts.add(script),
         children: toJsxExpression(
             async () => (await renderChildren(props.children)) + emitCode(scripts),
@@ -111,7 +111,7 @@ export function useRegisterBrowserEventHandler(
     eventName: string,
     handler: BrowserFunc<(e: EventArgs) => void>,
 ) {
-    useContext(scriptContext)({
+    useContext(ScriptContext)({
         [browserScriptSymbol]: null,
         hasContext: false,
         serializeScript: (registerFunction) => ({
@@ -179,7 +179,7 @@ type SerializedScript = {
 type ScriptSet = Set<BrowserScript | BrowserFunc<any>>;
 type SerializeScript = (registerFunction: (func: BrowserFunc<any>) => string) => SerializedScript;
 
-const scriptContext = createContext<(script: BrowserScript | BrowserFunc<any>) => void>({
+const ScriptContext = createContext<(script: BrowserScript | BrowserFunc<any>) => void>({
     name: "browser scripts",
 });
 

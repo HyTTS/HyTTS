@@ -1,8 +1,8 @@
 import { randomBytes } from "node:crypto";
 import type { ZodType, ZodTypeDef } from "zod";
 import { HttpError } from "@/http/http-error";
-import { type ContextProviderProps, createContext, useContext } from "@/jsx/context";
-import { CspNonceProvider } from "@/jsx/csp-nonce";
+import { type ContextProps, createContext, useContext } from "@/jsx/context";
+import { CspNonceContext } from "@/jsx/csp-nonce";
 import type { JsxElement, PropsWithChildren } from "@/jsx/jsx-types";
 import type { Href } from "@/routing/href";
 import { parseUrlSearchParams } from "@/serialization/url-params";
@@ -24,11 +24,11 @@ type HttpContext = {
     readonly setStatusCode: (code: number) => void;
 };
 
-const httpContext = createContext<HttpContext>({ name: "http context" });
+const HttpContext = createContext<HttpContext>({ name: "http context" });
 
 /** Provides access to the entire HTTP context. */
 export function useHttpContext() {
-    return useContext(httpContext);
+    return useContext(HttpContext);
 }
 
 /**
@@ -36,7 +36,7 @@ export function useHttpContext() {
  * object, to all of its children.
  */
 export function HttpResponse(
-    props: ContextProviderProps<Omit<HttpContext, "method"> & { readonly method: string }>,
+    props: ContextProps<Omit<HttpContext, "method"> & { readonly method: string }>,
 ) {
     const method = props.value.method as HttpMethod;
     if (!httpMethods.includes(method)) {
@@ -44,17 +44,17 @@ export function HttpResponse(
     }
 
     return (
-        <httpContext.Provider
+        <HttpContext
             value={{
                 ...props.value,
                 method,
                 requestPath: props.value.requestPath.filter((segment) => segment !== ""),
             }}
         >
-            <CspNonceProvider value={randomBytes(32).toString("base64")}>
+            <CspNonceContext value={randomBytes(32).toString("base64")}>
                 {props.children}
-            </CspNonceProvider>
-        </httpContext.Provider>
+            </CspNonceContext>
+        </HttpContext>
     );
 }
 
@@ -139,7 +139,7 @@ export function AbsoluteRedirect({ href, children }: AbsoluteRedirectProps): Jsx
  * during a frame navigation or a form submission.
  */
 export function useRequester() {
-    return useContext(httpContext).getHeader("x-hy") ? "HyTTS" : "browser";
+    return useContext(HttpContext).getHeader("x-hy") ? "HyTTS" : "browser";
 }
 
 /**
@@ -147,7 +147,7 @@ export function useRequester() {
  * updated with the response HTML.
  */
 export function useRequestedFrameId() {
-    return useContext(httpContext).getHeader("x-hy-frame-id");
+    return useContext(HttpContext).getHeader("x-hy-frame-id");
 }
 
 /** Returns the current request's search params, parsed with the given `schema`. */

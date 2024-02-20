@@ -5,19 +5,18 @@ import { renderChildren } from "@/jsx/render-children";
 const contextStorage = new AsyncLocalStorage<Record<symbol, unknown>>();
 const contextIdSymbol = Symbol();
 
-export type ContextProviderProps<T> = PropsWithChildren<{
+export type ContextProps<T> = PropsWithChildren<{
     /** The value that the context provides to all of its children. */
     readonly value: T;
 }>;
 
 /**
- * A context handles some state scoped to the children of its `Provider` component. A provided
- * context can be overwritten in lower parts of the component tree.
+ * A context handles some state scoped to its children. Such a scoped state provided by a context
+ * can be overwritten in lower parts of the component tree by providing the context again with a
+ * different value.
  */
-export type Context<T> = {
+export type Context<T> = JsxComponent<ContextProps<T>> & {
     readonly [contextIdSymbol]: symbol;
-    /** Provides the given `value` to all of its children. */
-    readonly Provider: JsxComponent<ContextProviderProps<T>>;
     /** Configures the behavior of a context. */
     readonly options: ContextOptions<T> | undefined;
 };
@@ -39,15 +38,14 @@ export type ContextOptions<T> = {
  */
 export function createContext<T>(options?: ContextOptions<T>): Context<T> {
     const id = Symbol();
-    return {
-        [contextIdSymbol]: id,
-        options,
-        Provider: (props) =>
+    return Object.assign(
+        (props: ContextProps<T>) =>
             toJsxExpression(() => {
                 const context = { ...contextStorage.getStore(), [id]: props.value };
                 return contextStorage.run(context, () => renderChildren(props.children));
             }),
-    };
+        { [contextIdSymbol]: id, options },
+    );
 }
 
 /**
@@ -56,19 +54,20 @@ export function createContext<T>(options?: ContextOptions<T>): Context<T> {
  * defines no default value, an error is thrown.
  */
 export function useContext<T>(context: Context<T>): T {
-    const symbol = Symbol();
-    const value = useContextOrDefault(context, symbol);
+    const value = useContextOrDefault(context, noContextValueSymbol);
 
-    if (value === symbol) {
+    if (value === noContextValueSymbol) {
         throw new Error(
             `No context named '${
                 context.options?.name ?? "[unnamed context]"
-            }' has been set by any ancestor component and the context has no default value.`,
+            }' has been set by any ancestor component and the context provides no default value.`,
         );
     } else {
         return value;
     }
 }
+
+const noContextValueSymbol = Symbol();
 
 /**
  * Gets the given `context`'s value provided for the calling component with regards to its location

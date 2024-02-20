@@ -309,11 +309,11 @@ describe("jsx rendering", () => {
     });
 
     describe("context", () => {
-        const testContext = createContext<number>();
+        const TestContext = createContext<number>();
 
         it("throws when context is used even though it is not provided and it has no default value", async () => {
             const C = () => {
-                useContext(testContext);
+                useContext(TestContext);
                 return null;
             };
 
@@ -328,69 +328,69 @@ describe("jsx rendering", () => {
         });
 
         it("returns the context's value when only one context exists in the ancestors", async () => {
-            const C = () => <>{useContext(testContext)}</>;
+            const C = () => <>{useContext(TestContext)}</>;
             await testJsx(
-                <testContext.Provider value={17}>
+                <TestContext value={17}>
                     <C />
-                </testContext.Provider>,
+                </TestContext>,
                 "17",
             );
         });
 
         it("returns the value of the context set in the closest ancestor", async () => {
-            const C1 = () => <>{useContext(testContext)}</>;
+            const C1 = () => <>{useContext(TestContext)}</>;
             const C2 = () => (
                 <>
                     <C1 />{" "}
-                    <testContext.Provider value={33}>
+                    <TestContext value={33}>
                         <C1 />
-                    </testContext.Provider>{" "}
+                    </TestContext>{" "}
                     <C1 />
                 </>
             );
 
             await testJsx(
-                <testContext.Provider value={17}>
+                <TestContext value={17}>
                     <C2 />
-                </testContext.Provider>,
+                </TestContext>,
                 "17 33 17",
             );
         });
 
         it("returns the value of the correct context if there are multiple ones", async () => {
-            const otherContext = createContext<string>();
+            const OtherContext = createContext<string>();
             const C = () => (
                 <>
-                    {useContext(testContext)} {useContext(otherContext)}
+                    {useContext(TestContext)} {useContext(OtherContext)}
                 </>
             );
 
             await testJsx(
-                <testContext.Provider value={17}>
-                    <otherContext.Provider value="test">
+                <TestContext value={17}>
+                    <OtherContext value="test">
                         <C />
-                    </otherContext.Provider>
-                </testContext.Provider>,
+                    </OtherContext>
+                </TestContext>,
                 "17 test",
             );
         });
 
         it("shares the context between all asynchronous siblings", async () => {
             let count = 0;
-            const otherContext = createContext<() => {}>();
+            const OtherContext = createContext<() => {}>();
 
             const C = async (props: { idx: number }) => {
                 await sleep("", (2 - props.idx) * 10);
-                useContext(otherContext)();
+                useContext(OtherContext)();
                 return null;
             };
 
             await testJsx(
-                <otherContext.Provider value={() => count++}>
+                <OtherContext value={() => count++}>
                     {new Array(3).fill(0).map((_, idx) => (
                         <C idx={idx} />
                     ))}
-                </otherContext.Provider>,
+                </OtherContext>,
                 "",
             );
 
@@ -400,26 +400,26 @@ describe("jsx rendering", () => {
         it("supports individual contexts for each asynchronous sibling", async () => {
             const C1 = async () => {
                 await sleep("", 10);
-                return <>{useContext(testContext)}-</>;
+                return <>{useContext(TestContext)}-</>;
             };
 
             const C2 = async (props: { idx: number }) => {
                 await sleep("", (2 - props.idx) * 10);
                 return (
-                    <testContext.Provider value={props.idx}>
+                    <TestContext value={props.idx}>
                         <C1 />
-                    </testContext.Provider>
+                    </TestContext>
                 );
             };
 
             await testJsx(
-                <testContext.Provider value={33}>
+                <TestContext value={33}>
                     <C1 />
                     {new Array(3).fill(0).map((_, idx) => (
                         <C2 idx={idx} />
                     ))}
                     <C1 />
-                </testContext.Provider>,
+                </TestContext>,
                 "33-0-1-2-33-",
             );
         });
