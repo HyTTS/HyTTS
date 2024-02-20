@@ -302,8 +302,8 @@ export function param<PathParamIn, PathParamOut, Router extends RoutesComponent<
     schemaProvider: Provide<ZodType<PathParamOut, any, PathParamIn>>,
     nestedRoutes: (pathParam: () => PathParamOut) => Router,
 ): ParamComponent<PathParamIn, Router> {
-    const paramContext = createContext<PathParamOut>({ name: "path parameter" });
-    const Component = nestedRoutes(() => useContext(paramContext));
+    const ParamContext = createContext<PathParamOut>({ name: "path parameter" });
+    const Component = nestedRoutes(() => useContext(ParamContext));
 
     return tag(paramSymbol, async ({ pathSegments }) => {
         const paramSchema =
@@ -314,9 +314,9 @@ export function param<PathParamIn, PathParamOut, Router extends RoutesComponent<
         )!;
 
         return (
-            <paramContext.Provider value={param}>
+            <ParamContext value={param}>
                 <Component pathSegments={pathSegments.slice(1)} />
-            </paramContext.Provider>
+            </ParamContext>
         );
     });
 }
